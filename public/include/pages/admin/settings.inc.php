@@ -20,6 +20,7 @@ if (@$_REQUEST['do'] == 'save' && !empty($_REQUEST['data'])) {
 $smarty->assign("MAINTENANCE", $setting->getValue('maintenance'));
 $smarty->assign("LOCKREGISTRATION", $setting->getValue('lock_registration'));
 $smarty->assign("DISABLEINVITATIONS", $setting->getValue('disable_invitations'));
+$smarty->assign("DISABLETEAMS", $setting->getValue('disable_teams'));
 $smarty->assign("DISABLEAP", $setting->getValue('disable_ap'));
 $smarty->assign("DISABLEMP", $setting->getValue('disable_mp'));
 $smarty->assign("DISABLENOTIFICATIONS", $setting->getValue('disable_notifications'));

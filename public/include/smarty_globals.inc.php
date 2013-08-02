@@ -52,6 +52,7 @@ $aGlobal = array(
     'accounts' => $config['accounts'],
     'disable_invitations' => $setting->getValue('disable_invitations'),
     'disable_notifications' => $setting->getValue('disable_notifications'),
+    'disable_teams' => $setting->getValue('disable_teams'),
     'price' => array( 'currency' => $config['price']['currency'] ),
     'targetdiff' => $config['difficulty'],
     'currency' => $config['currency'],
@@ -80,6 +81,10 @@ if ($config['reward_type'] != 'block') {
 if (@$_SESSION['USERDATA']['id']) {
   $aGlobal['userdata'] = $_SESSION['USERDATA']['id'] ? $user->getUserData($_SESSION['USERDATA']['id']) : array();
   $aGlobal['userdata']['balance'] = $transaction->getBalance($_SESSION['USERDATA']['id']);
+  if ($aGlobal['userdata']['team_id'] = $team->memberOf($_SESSION['USERDATA']['id'])) {
+    $aGlobal['userdata']['team_name'] = $team->getName($aGlobal['userdata']['team_id']);
+    $aGlobal['userdata']['team_owner'] = $team->getOwnerId($aGlobal['userdata']['team_id']);
+  }
 
   // Other userdata that we can cache savely
   $aGlobal['userdata']['shares'] = $statistics->getUserShares($_SESSION['USERDATA']['id']);

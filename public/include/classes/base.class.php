@@ -36,6 +36,9 @@ class Base {
   public function setTokenType($tokentype) {
     $this->tokentype = $tokentype;
   }
+  public function setTeamsAccounts($teamsaccounts) {
+    $this->teamsaccounts = $teamsaccounts;
+  }
   public function setErrorMessage($msg) {
     $this->sError = $msg;
   }
@@ -54,14 +57,47 @@ class Base {
   protected function getSingle($value, $search='id', $field='id', $type="i") {
     $this->debug->append("STA " . __METHOD__, 4); 
     $stmt = $this->mysqli->prepare("SELECT $search FROM $this->table WHERE $field = ? LIMIT 1");
-    if ($this->checkStmt($stmt)) {
-      $stmt->bind_param($type, $value);
-      $stmt->execute();
-      $stmt->bind_result($retval);
-      $stmt->fetch();
-      $stmt->close();
+    if ($this->checkStmt($stmt) && $stmt->bind_param($type, $value) && $stmt->execute() && $stmt->bind_result($retval) && $stmt->fetch())
       return $retval;
-    }
+    return false;
+  }
+
+  /**
+   * Update a single row in a table
+   * @param userID int Account ID
+   * @param field string Field to update
+   * @return bool
+   **/
+  protected function updateSingle($id, $field) {
+    $this->debug->append("STA " . __METHOD__, 4); 
+    $stmt = $this->mysqli->prepare("UPDATE $this->table SET `" . $field['name'] . "` = ? WHERE id = ? LIMIT 1");
+    if ($this->checkStmt($stmt) && $stmt->bind_param($field['type'].'i', $field['value'], $id) && $stmt->execute())
+      return true;
+    $this->debug->append("Unable to update " . $field['name'] . " with " . $field['value'] . " for ID $id");
+    return false;
+  }
+
+  // Some basic getters that help in child classes
+  public function getName($id) {
+    $this->debug->append("STA " . __METHOD__, 4);
+    return $this->getSingle($id, 'name', 'id', 'i');
+  }
+  public function getRowCount() {
+    $stmt = $this->mysqli->prepare("SELECT COUNT(id) AS count FROM $this->table");
+    if ($this->checkStmt($stmt) && $stmt->execute() && $result = $stmt->get_result())
+      return $result->fetch_object()->count;
+    return false;
+  }
+  public function getMaxId() {
+    $stmt = $this->mysqli->prepare("SELECT MAX(id) id FROM $this->table");
+    if ($this->checkStmt($stmt) && $stmt->execute() && $result = $stmt->get_result())
+      return $result->fetch_object()->id;
+    return false;
+  }
+  public function getMinId() {
+    $stmt = $this->mysqli->prepare("SELECT MIN(id) id FROM $this->table");
+    if ($this->checkStmt($stmt) && $stmt->execute() && $result = $stmt->get_result())
+      return $result->fetch_object()->id;
     return false;
   }
 
@@ -73,21 +109,6 @@ class Base {
       return false;
     }
     return true;
-  }
-  /**
-   * Update a single row in a table
-   * @param userID int Account ID
-   * @param field string Field to update
-   * @return bool
-   **/
-  protected function updateSingle($id, $field, $table='') {
-    if (empty($table)) $table = $this->table;
-    $this->debug->append("STA " . __METHOD__, 4);
-    $stmt = $this->mysqli->prepare("UPDATE $table SET " . $field['name'] . " = ? WHERE id = ? LIMIT 1");
-    if ($this->checkStmt($stmt) && $stmt->bind_param($field['type'].'i', $field['value'], $id) && $stmt->execute())
-      return true;
-    $this->debug->append("Unable to update " . $field['name'] . " with " . $field['value'] . " for ID $id");
-    return false;
   }
 }
 ?>

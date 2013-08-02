@@ -6,10 +6,23 @@
                 <li><a href="{$smarty.server.PHP_SELF}?page=account&action=edit">Edit Account</a></li>
                 <li><a href="{$smarty.server.PHP_SELF}?page=account&action=workers">My Workers</a></li>
                 <li><a href="{$smarty.server.PHP_SELF}?page=account&action=transactions">Transactions</a></li>
-                {if !$GLOBAL.config.disable_notifications}<li><a href="{$smarty.server.PHP_SELF}?page=account&action=notifications">Notifications</a></li>{/if}
-                {if !$GLOBAL.config.disable_invitations}<li><a href="{$smarty.server.PHP_SELF}?page=account&action=invitations">Invitations</a></li>{/if}
+                {if !$GLOBAL.config.disable_notifications|default}<li><a href="{$smarty.server.PHP_SELF}?page=account&action=notifications">Notifications</a></li>{/if}
+                {if !$GLOBAL.config.disable_invitations|default}<li><a href="{$smarty.server.PHP_SELF}?page=account&action=invitations">Invitations</a></li>{/if}
               </ul>
             </li>
+            {if !$GLOBAL.config.disable_teams|default}
+            <li><a href="{$smarty.server.PHP_SELF}?page=teams">Teams</a>
+              <ul>
+                {if $GLOBAL.userdata.team_id|default}
+                  <li><a href="{$smarty.server.PHP_SELF}?page=teams&action=leave">Leave Team</a></li>
+                  {if $GLOBAL.userdata.id == $GLOBAL.userdata.team_owner}<li><a href="{$smarty.server.PHP_SELF}?page=teams&action=owner">Change Owner</a></li>{/if}
+                {else}
+                  <li><a href="{$smarty.server.PHP_SELF}?page=teams&action=join">Join Team</a></li>
+                  <li><a href="{$smarty.server.PHP_SELF}?page=teams&action=create">Create Team</a></li>
+                {/if}
+              </ul>
+            </li>
+            {/if}
             {/if}
             {if $smarty.session.AUTHENTICATED|default:"0" == 1 && $GLOBAL.userdata.is_admin == 1}
             <li><a href="{$smarty.server.PHP_SELF}?page=admin">Admin Panel</a>

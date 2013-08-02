@@ -37,6 +37,8 @@ require_once(CLASS_DIR . '/worker.class.php');
 require_once(CLASS_DIR . '/statistics.class.php');
 require_once(CLASS_DIR . '/transaction.class.php');
 require_once(CLASS_DIR . '/notification.class.php');
+require_once(CLASS_DIR . '/teamsaccounts.class.php');
+require_once(CLASS_DIR . '/team.class.php');
 require_once(CLASS_DIR . '/news.class.php');
 require_once(INCLUDE_DIR . '/lib/Michelf/Markdown.php');
 require_once(INCLUDE_DIR . '/lib/scrypt.php');
