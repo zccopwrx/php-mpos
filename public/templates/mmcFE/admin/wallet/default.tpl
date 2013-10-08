@@ -9,6 +9,10 @@
     <td class="right">{$LOCKED|number_format:"8"}</td>
   </tr>
   <tr>
+    <th>Unconfirmed</th>
+    <td class="right">{$UNCONFIRMED|number_format:"8"}</td>
+  </tr>
+  <tr>
     <th>Liquid Assets</th>
     <td class="right">{($BALANCE - $LOCKED)|number_format:"8"}</td>
   </tr>
@@ -18,5 +22,11 @@
     <td class="right">{$NEWMINT|number_format:"8"}</td>
   </tr>
 {/if}
+  {if $COLDCOINS != 0}
+  <tr>
+    <th>Cold Coins</th>
+    <td class="right">{$COLDCOINS|number_format:"8"}</td>
+  </tr>
+  {/if}
 </table>
 {include file="global/block_footer.tpl"}

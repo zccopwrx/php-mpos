@@ -9,32 +9,51 @@ $debug->append('Global smarty variables', 3);
 $debug->append('No cached page detected, loading smarty globals', 3);
 // Defaults to get rid of PHP Notice warnings
 $dDifficulty = 1;
-$aRoundShares = 1;
 
-// Only run these if the user is logged in
-if (@$_SESSION['AUTHENTICATED']) {
-  $aRoundShares = $statistics->getRoundShares();
-  if ($bitcoin->can_connect() === true) {
-    $dDifficulty = $bitcoin->query('getdifficulty');
-    if (is_array($dDifficulty) && array_key_exists('proof-of-work', $dDifficulty))
-      $dDifficulty = $dDifficulty['proof-of-work'];
-  }
+// Fetch round shares
+if (!$aRoundShares = $statistics->getRoundShares()) {
+  $aRoundShares = array('valid' => 0, 'invalid' => 0);
 }
-// Always fetch this since we need for ministats header
-$bitcoin->can_connect() === true ? $dNetworkHashrate = $bitcoin->query('getnetworkhashps') : $dNetworkHashrate = 0;
 
-// Fetch some data
-if (!$iCurrentActiveWorkers = $worker->getCountAllActiveWorkers()) $iCurrentActiveWorkers = 0;
+if ($bitcoin->can_connect() === true) {
+  $dDifficulty = $bitcoin->getdifficulty();
+  $dNetworkHashrate = $bitcoin->getnetworkhashps();
+} else {
+  $dDifficulty = 1;
+  $dNetworkHashrate = 0;
+}
+
+// Baseline pool hashrate for templates
+if ( ! $dPoolHashrateModifier = $setting->getValue('statistics_pool_hashrate_modifier') ) $dPoolHashrateModifier = 1;
 $iCurrentPoolHashrate =  $statistics->getCurrentHashrate();
-$iCurrentPoolShareRate = $statistics->getCurrentShareRate();
 
 // Avoid confusion, ensure our nethash isn't higher than poolhash
 if ($iCurrentPoolHashrate > $dNetworkHashrate) $dNetworkHashrate = $iCurrentPoolHashrate;
 
+// Baseline network hashrate for templates
+if ( ! $dPersonalHashrateModifier = $setting->getValue('statistics_personal_hashrate_modifier') ) $dPersonalHashrateModifier = 1;
+if ( ! $dNetworkHashrateModifier = $setting->getValue('statistics_network_hashrate_modifier') ) $dNetworkHashrateModifier = 1;
+
+// Apply modifier now
+$dNetworkHashrate = $dNetworkHashrate * $dNetworkHashrateModifier;
+$iCurrentPoolHashrate = $iCurrentPoolHashrate * $dPoolHashrateModifier;
+
+// Share rate of the entire pool
+$iCurrentPoolShareRate = $statistics->getCurrentShareRate();
+
+// Active workers
+if (!$iCurrentActiveWorkers = $worker->getCountAllActiveWorkers()) $iCurrentActiveWorkers = 0;
+
+// Some settings to propagate to template
+if (! $statistics_ajax_refresh_interval = $setting->getValue('statistics_ajax_refresh_interval')) $statistics_ajax_refresh_interval = 10;
+
+// Small helper array
+$aHashunits = array( '1' => 'KH/s', '0.001' => 'MH/s', '0.000001' => 'GH/s' );
+
 // Global data for Smarty
 $aGlobal = array(
-  'slogan' => $config['website']['slogan'],
-  'websitename' => $config['website']['name'],
+  'hashunits' => array( 'pool' => $aHashunits[$dPoolHashrateModifier], 'network' => $aHashunits[$dNetworkHashrateModifier], 'personal' => $aHashunits[$dPersonalHashrateModifier]),
+  'hashmods' => array( 'personal' => $dPersonalHashrateModifier ),
   'hashrate' => $iCurrentPoolHashrate,
   'nethashrate' => $dNetworkHashrate,
   'sharerate' => $iCurrentPoolShareRate,
@@ -44,15 +63,13 @@ $aGlobal = array(
   'confirmations' => $config['confirmations'],
   'reward' => $config['reward'],
   'price' => $setting->getValue('price'),
-  'blockexplorer' => $config['blockexplorer'],
-  'chaininfo' => $config['chaininfo'],
   'disable_mp' => $setting->getValue('disable_mp'),
   'config' => array(
-    'website' => $config['website'],
     'accounts' => $config['accounts'],
     'disable_invitations' => $setting->getValue('disable_invitations'),
     'disable_notifications' => $setting->getValue('disable_notifications'),
     'disable_teams' => $setting->getValue('disable_teams'),
+    'statistics_ajax_refresh_interval' => $statistics_ajax_refresh_interval,
     'price' => array( 'currency' => $config['price']['currency'] ),
     'targetdiff' => $config['difficulty'],
     'currency' => $config['currency'],
@@ -65,17 +82,39 @@ $aGlobal = array(
   )
 );
 
+// Website configurations
+$aGlobal['website']['name'] = $setting->getValue('website_name');
+$aGlobal['website']['title'] = $setting->getValue('website_title');
+$aGlobal['website']['slogan'] = $setting->getValue('website_slogan');
+$aGlobal['website']['email'] = $setting->getValue('website_email');
+$aGlobal['website']['api']['disabled'] = $setting->getValue('disable_api');
+$aGlobal['website']['blockexplorer']['disabled'] = $setting->getValue('website_blockexplorer_disabled');
+$aGlobal['website']['chaininfo']['disabled'] = $setting->getValue('website_chaininfo_disabled');
+$setting->getValue('website_blockexplorer_url') ? $aGlobal['website']['blockexplorer']['url'] = $setting->getValue('website_blockexplorer_url') : $aGlobal['website']['blockexplorer']['url'] = 'http://explorer.litecoin.net/block/';
+$setting->getValue('website_chaininfo_url') ? $aGlobal['website']['chaininfo']['url'] = $setting->getValue('website_chaininfo_url') : $aGlobal['website']['chaininfo']['url'] = 'http://allchains.info';
+
+// ACLs
+$aGlobal['acl']['pool']['statistics'] = $setting->getValue('acl_pool_statistics');
+$aGlobal['acl']['block']['statistics'] = $setting->getValue('acl_block_statistics');
+$aGlobal['acl']['round']['statistics'] = $setting->getValue('acl_round_statistics');
+
+// We support some dynamic reward targets but fall back to our fixed value
 // Special calculations for PPS Values based on reward_type setting and/or available blocks
-if ($config['reward_type'] != 'block') {
-  $aGlobal['ppsvalue'] = number_format(round(50 / (pow(2,32) * $dDifficulty) * pow(2, $config['difficulty']), 12) ,12);
+if ($config['pps']['reward']['type'] == 'blockavg' && $block->getBlockCount() > 0) {
+  $pps_reward = round($block->getAvgBlockReward($config['pps']['blockavg']['blockcount']));
 } else {
-  // Try to find the last block value and use that for future payouts, revert to fixed reward if none found
-  if ($aLastBlock = $block->getLast()) {
-    $aGlobal['ppsvalue'] = number_format(round($aLastBlock['amount'] / (pow(2,32) * $dDifficulty) * pow(2, $config['difficulty']), 12) ,12);
+  if ($config['pps']['reward']['type'] == 'block') {
+     if ($aLastBlock = $block->getLast()) {
+        $pps_reward = $aLastBlock['amount'];
+     } else {
+     $pps_reward = $config['pps']['reward']['default'];
+     }
   } else {
-    $aGlobal['ppsvalue'] = number_format(round($config['reward'] / (pow(2,32) * $dDifficulty) * pow(2, $config['difficulty']), 12) ,12);
+     $pps_reward = $config['pps']['reward']['default'];
   }
 }
+
+$aGlobal['ppsvalue'] = number_format(round($pps_reward / (pow(2,32) * $dDifficulty) * pow(2, $config['pps_target']), 12) ,12);
 
 // We don't want these session infos cached
 if (@$_SESSION['USERDATA']['id']) {
@@ -88,7 +127,7 @@ if (@$_SESSION['USERDATA']['id']) {
 
   // Other userdata that we can cache savely
   $aGlobal['userdata']['shares'] = $statistics->getUserShares($_SESSION['USERDATA']['id']);
-  $aGlobal['userdata']['hashrate'] = $statistics->getUserHashrate($_SESSION['USERDATA']['id']);
+  $aGlobal['userdata']['hashrate'] = $statistics->getUserHashrate($_SESSION['USERDATA']['id']) * $dPersonalHashrateModifier;
   $aGlobal['userdata']['sharerate'] = $statistics->getUserSharerate($_SESSION['USERDATA']['id']);
 
   switch ($config['payout_system']) {
@@ -106,10 +145,11 @@ if (@$_SESSION['USERDATA']['id']) {
       $aGlobal['userdata']['est_payout'] = 0;
     }
   case 'pplns':
-    if ($iAvgBlockShares = round($block->getAvgBlockShares($config['pplns']['blockavg']['blockcount']))) {
-      $aGlobal['pplns']['target'] = $iAvgBlockShares;
-    } else {
-      $aGlobal['pplns']['target'] = $config['pplns']['shares']['default'];
+    $aGlobal['pplns']['target'] = $config['pplns']['shares']['default'];
+    if ($aLastBlock = $block->getLast()) {
+      if ($iAvgBlockShares = round($block->getAvgBlockShares($aLastBlock['height'], $config['pplns']['blockavg']['blockcount']))) {
+        $aGlobal['pplns']['target'] = $iAvgBlockShares;
+      }
     }
     break;
   case 'pps':
@@ -125,6 +165,11 @@ if (@$_SESSION['USERDATA']['id']) {
 
 if ($setting->getValue('maintenance'))
   $_SESSION['POPUP'][] = array('CONTENT' => 'This pool is currently in maintenance mode.', 'TYPE' => 'warning');
+if ($motd = $setting->getValue('system_motd'))
+  $_SESSION['POPUP'][] = array('CONTENT' => $motd, 'TYPE' => 'info');
+
+// So we can display additional info
+$smarty->assign('DEBUG', DEBUG);
 
 // Make it available in Smarty
 $smarty->assign('PATH', 'site_assets/' . THEME);

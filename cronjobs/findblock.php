@@ -19,6 +19,9 @@ limitations under the License.
 
  */
 
+// Change to working directory
+chdir(dirname(__FILE__));
+
 // Include all settings and classes
 require_once('shared.inc.php');
 
@@ -58,6 +61,10 @@ if (empty($aTransactions['transactions'])) {
         $aData['confirmations'] . "\t\t" .
         $aData['difficulty'] . "\t" .
         strftime("%Y-%m-%d %H:%M:%S", $aData['time']));
+      if ( ! empty($aBlockInfo['flags']) && preg_match('/proof-of-stake/', $aBlockInfo['flags']) ) {
+        $log->logInfo("Block above with height " .  $aData['height'] . " not added to database, proof-of-stake block!");
+        continue;
+      }
       if (!$block->addBlock($aData) ) {
         $log->logFatal('Unable to add this block to database: ' . $aData['height']);
       }

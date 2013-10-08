@@ -19,6 +19,9 @@ limitations under the License.
 
  */
 
+// Change to working directory
+chdir(dirname(__FILE__));
+
 // Include all settings and classes
 require_once('shared.inc.php');
 
@@ -58,7 +61,7 @@ if (!empty($aNotifications)) {
     $aData = json_decode($aNotification['data'], true);
     $aWorker = $worker->getWorker($aData['id']);
     $log->logInfo("    " . $aWorker['username'] . " ...");
-    if ($aWorker['active'] == 1) {
+    if ($aWorker['hashrate'] > 0) {
       if ($notification->setInactive($aNotification['id'])) {
         $log->logInfo(" updated #" . $aNotification['id'] . " for " . $aWorker['username'] . " as inactive\n");
       } else {

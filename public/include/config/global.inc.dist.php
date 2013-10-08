@@ -11,6 +11,9 @@ define('CLASS_DIR', INCLUDE_DIR . '/classes');
 // Our pages directory which takes care of
 define('PAGES_DIR', INCLUDE_DIR . '/pages');
 
+// Our theme folder holding all themes
+define('THEME_DIR', BASEPATH . 'templates');
+
 // Set debugging level for our debug class
 define('DEBUG', 0);
 
@@ -20,7 +23,7 @@ define('SALT', 'PLEASEMAKEMESOMETHINGRANDOM');
 /**
  * Database configuration
  *
- * A MySQL database backend is required for mmcfe-ng.
+ * A MySQL database backend is required for MPOS.
  * Also ensure the database structure is imported!
  * The SQL file should be included in this project under the `sql` directory
  *
@@ -29,18 +32,18 @@ define('SALT', 'PLEASEMAKEMESOMETHINGRANDOM');
  *   port     =  3306
  *   user     =  'someuser'
  *   pass     =  'somepass'
- *   name     =  'mmcfe_ng'
+ *   name     =  'mpos'
  **/
 $config['db']['host'] = 'localhost';
 $config['db']['user'] = 'someuser';
 $config['db']['pass'] = 'somepass';
 $config['db']['port'] = 3306;
-$config['db']['name'] = 'mmcfe_ng';
+$config['db']['name'] = 'mpos';
 
 /**
  * Local wallet RPC configuration
  *
- * mmcfe-ng uses the RPC backend to fetch transactions, blocks
+ * MPOS uses the RPC backend to fetch transactions, blocks
  * and various other things. They need to match your coind RPC
  * configuration.
  *
@@ -59,9 +62,9 @@ $config['wallet']['password'] = 'testnet';
  * API configuration to fetch prices for set currency
  *
  * Explanation:
- *   mmcfe-ng will try to fetch the current exchange rates
+ *   MPOS will try to fetch the current exchange rates
  *   from this API URL/target. Currently btc-e and coinchoose
- *   are supported in mmcfe-ng. If you want to remove the trade
+ *   are supported in MPOS. If you want to remove the trade
  *   header just set currency to an empty string.
  *
  * Default (btc-e.com):
@@ -75,9 +78,9 @@ $config['wallet']['password'] = 'testnet';
  *   currency  =  `BTC`
  *
  * Optional (cryptsy.com):
- *   url       =  `https://www.cryptsy.com`
- *   target    =  `/api.php?method=marketdata`
+ *   url       =  `http://pubapi.cryptsy.com`
  *   currency  =  `BTC`
+ *   target    =  `/api.php?method=marketdata`
  **/
 $config['price']['url'] = 'https://btc-e.com';
 $config['price']['target'] = '/api/2/ltc_usd/ticker';
@@ -98,45 +101,9 @@ $config['ap_threshold']['max'] = 250;
 
 
 /**
- * Website specific configuration settings
- *
- * Explanation:
- *   title          :  Website title used in master template
- *   name           :  The pool name, displayed in the header and mails
- *   slogan         :  A special slogan, also displayed in the header below name
- *   email          :  `From` addresses used in notifications
- *   theme          :  Theme used for desktop browsers
- *   mobile         :  Enable/Disable mobile theme support
- *   mobile_theme   :  Theme used for mobile browsers
- *   api disabled   :  Disable the sites API functions
- *
- * Defaults:
- *   title          =  `The Pool - Mining Evolved`
- *   name           =  `The Pool`
- *   slogan         =  `Resistance is futile`
- *   email          =  `test@example.com`
- *   theme          =  `mmcFE`
- *   mobile         =  true
- *   mobile_theme   =  `mobile`
- *   api disbabled  =  false
- **/
-$config['website']['title'] = 'The Pool - Mining Evolved';
-$config['website']['name'] = 'The Pool';
-$config['website']['slogan'] = 'Resistance is futile';
-$config['website']['email'] = 'test@example.com';
-$config['website']['theme'] = 'mmcFE';
-$config['website']['mobile'] = true;
-$config['website']['mobile_theme'] = 'mobile';
-$config['website']['api']['disabled'] = false;
-
-/**
  * Account specific settings
  *
  * Explanation
- *   You can change some defaults on how accounts are created or registered
- *   By default, all newly created accounts will require an email verificaiton.
- *   Only after acitivating an account the user will be able to login
- *
  *   Invitations will allow your users to invite new members to join the pool.
  *   After sending a mail to the invited user, they can register using the token
  *   created. Invitations can be enabled and disabled through the admin panel.
@@ -146,40 +113,12 @@ $config['website']['api']['disabled'] = false;
  *   variable.
  *
  *  Options:
- *    confirm_email  :  Send confirmation mail to user after registration
  *    count          :  Maximum invitations a user is able to send
  *
  *  Defaults:
- *    confirm_email  :  true
  *    count          :  5
  **/
-$config['accounts']['confirm_email']['enabled'] = true;
 $config['accounts']['invitations']['count'] = 5;
-
-/**
- * Some basic access restrictions on some pages
- *
- * Explanation:
- *   Some pools would like to run a few pages for public access instead
- *   of enforcing a login. You can change visibility of some pages here.
- *
- * Options:
- *   'public'   :  Allow guest access and authenticated user to view page
- *   'private'  :  Only allow logged in users access to view page
- *
- * Defaults:
- *   'private' for every page
- **/
-$config['website']['acl']['statistics']['pool'] = 'private';
-$config['website']['acl']['statistics']['blocks'] = 'private';
-
-/**
- * Re-Captcha settings
- * Please read http://www.google.com/recaptcha for details
- **/
-$config['recaptcha']['enabled'] = false;
-$config['recaptcha']['public_key'] = 'YOUR_PUBLIC_RECAPTCHA_KEY';
-$config['recaptcha']['private_key'] = 'YOUR_PRIVATE_RECAPTCHA_KEY';
 
 // Currency system used in this pool, default: `LTC`
 $config['currency'] = 'LTC';
@@ -251,15 +190,6 @@ $config['payout_system'] = 'prop';
 $config['archive']['maxrounds'] = 10; 
 $config['archive']['maxage'] = 60 * 24; 
 
-// URL prefix for block searches, used for block links, default: `http://explorer.litecoin.net/block/`
-// The Blockhash is appended on the templates to this URL
-// If this config is empty, the block link to the block information page will be removed
-$config['blockexplorer'] = 'http://explorer.litecoin.net/block/';
-
-// Link to blockchain information, used for difficulty link, default: `http://allchains.info`
-// If empty, the difficulty link to the chain information will be removed
-$config['chaininfo'] = 'http://allchains.info';
-
 // Pool fees applied to users in percent, default: 0 (disabled)
 $config['fees'] = 0;
 
@@ -306,7 +236,7 @@ $config['pplns']['shares']['type'] = 'blockavg';
 $config['pplns']['blockavg']['blockcount'] = 10;
 
 // Pool target difficulty as set in pushpoold configuration file
-// Please also read this for stratum: https://github.com/TheSerapher/php-mmcfe-ng/wiki/FAQ
+// Please also read this for stratum: https://github.com/TheSerapher/php-mpos/wiki/FAQ
 $config['difficulty'] = 20;
 
 
@@ -346,7 +276,30 @@ $config['reward'] = 50;
 
 // Confirmations per block required to credit transactions, default: 120
 $config['confirmations'] = 120;
+// Confirmations per block required in network to confirm its transactions, default: 120
+$config['network_confirmations'] = 120;
 
+ /**
+ * Available pps options:
+ *  reward_type:
+ *   fixed : Fixed value according to `reward` setting
+ *   blockavg : Dynamic value based on average of x number of block rewards
+ *   block : Dynamic value based on LAST block amount
+ *  reward:
+ *   float value : Any value of your choice but should reflect base block values
+ *   blockcount  :  amount of blocks to average, any integer
+ * Default:
+ *   pps_reward_type  = `fixed` default $config['pps']['reward']['default']
+ *   reward       = 50
+ *
+ **/
+$config['pps']['reward']['default'] = 50;
+$config['pps']['reward']['type'] = 'blockavg';
+$config['pps']['blockavg']['blockcount'] = 10;
+
+// pps base payout target, default 16 = difficulty 1 shares for vardiff
+// (1/(65536 * difficulty) * reward) = (reward / (pow(2,32) * difficulty) * pow(2, 16))
+$config['pps_target'] = 16; // do not change unless you know what it does
 
 /**
  * Memcache configuration
@@ -362,7 +315,7 @@ $config['confirmations'] = 120;
  *   enabled     :   Disable (false) memcache for debugging or enable (true) it
  *   host        :   Host IP or hostname
  *   port        :   memcache port
- *   keyprefix   :   Must be changed for multiple mmcfe-ng instances on one host
+ *   keyprefix   :   Must be changed for multiple MPOS instances on one host
  *   expiration  :   Default expiration time in seconds of all cached keys.
  *                   Increase if caches expire too fast.
  *   splay       :   Default randomizer for expiration times.
@@ -372,14 +325,14 @@ $config['confirmations'] = 120;
  *   enabled     =  `true`
  *   host        =  `localhost`
  *   port        =  11211
- *   keyprefix   =  `mmcfe_ng_`
+ *   keyprefix   =  `mpos_`
  *   expiration  =  90
  *   splay       =  15
  **/
 $config['memcache']['enabled'] = true;
 $config['memcache']['host'] = 'localhost';
 $config['memcache']['port'] = 11211;
-$config['memcache']['keyprefix'] = 'mmcfe_ng_';
+$config['memcache']['keyprefix'] = 'mpos_';
 $config['memcache']['expiration'] = 90;
 $config['memcache']['splay'] = 15;
 
@@ -389,7 +342,7 @@ $config['memcache']['splay'] = 15;
  *
  * You can configure the cookie behaviour to secure your cookies more than the PHP defaults
  *
- * For multiple installations of mmcfe-ng on the same domain you must change the cookie path.
+ * For multiple installations of MPOS on the same domain you must change the cookie path.
  *
  * Explanation:
  * duration:
@@ -440,7 +393,7 @@ $config['cookie']['secure'] = false;
  *   all data so rendering the page should not take too long anyway.
  *
  *   You can test this out and enable (1) this setting but it's not guaranteed to
- *   work with mmcfe-ng.
+ *   work with MPOS.
  *
  *   Ensure that the folder `templates/cache` is writable by the webserver!
  *

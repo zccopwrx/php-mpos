@@ -8,6 +8,7 @@
                 <li><a href="{$smarty.server.PHP_SELF}?page=account&action=transactions">Transactions</a></li>
                 {if !$GLOBAL.config.disable_notifications|default}<li><a href="{$smarty.server.PHP_SELF}?page=account&action=notifications">Notifications</a></li>{/if}
                 {if !$GLOBAL.config.disable_invitations|default}<li><a href="{$smarty.server.PHP_SELF}?page=account&action=invitations">Invitations</a></li>{/if}
+                <li><a href="{$smarty.server.PHP_SELF}?page=account&action=qrcode">QR Codes</a></li>
               </ul>
             </li>
             {if !$GLOBAL.config.disable_teams|default}
@@ -42,16 +43,20 @@
                 <li><a href="{$smarty.server.PHP_SELF}?page=statistics&action=pool">Pool Stats</a></li>
                 <li><a href="{$smarty.server.PHP_SELF}?page=statistics&action=blocks">Block Stats</a></li>
                 <li><a href="{$smarty.server.PHP_SELF}?page=statistics&action=graphs">Hashrate Graphs</a></li>
+                <li><a href="{$smarty.server.PHP_SELF}?page=statistics&action=round">Round Stats</a></li>
               </ul>
             </li>
             {else}
             <li><a href="{$smarty.server.PHP_SELF}?page=statistics">Statistics</a>
               <ul>
-            {if $GLOBAL.config.website.acl.statistics.pool == 'public'}
+            {if $GLOBAL.acl.pool.statistics}
                 <li><a href="{$smarty.server.PHP_SELF}?page=statistics&action=pool">Pool Stats</a></li>
             {/if}
-            {if $GLOBAL.config.website.acl.statistics.blocks == 'public'}
+            {if $GLOBAL.acl.block.statistics}
                 <li><a href="{$smarty.server.PHP_SELF}?page=statistics&action=blocks">Block Stats</a></li>
+            {/if}
+            {if $GLOBAL.acl.round.statistics}
+                <li><a href="{$smarty.server.PHP_SELF}?page=statistics&action=round">Round Stats</a></li>
             {/if}
               </ul>
             {/if}
@@ -60,7 +65,7 @@
             <li><a href="{$smarty.server.PHP_SELF}?page=about&action=pool">About</a>
               <ul>
                 <li><a href="{$smarty.server.PHP_SELF}?page=about&action=pool">This Pool</a></li>
-                {if !$GLOBAL.config.website.api.disabled}<li><a href="{$smarty.server.PHP_SELF}?page=about&action=api">API Reference</a></li>{/if}
+                {if !$GLOBAL.website.api.disabled}<li><a href="{$smarty.server.PHP_SELF}?page=about&action=api">API Reference</a></li>{/if}
                 <li><a href="{$smarty.server.PHP_SELF}?page=about&action=donors">Pool Donors</a></li>
               </ul>
             </li>

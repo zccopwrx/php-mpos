@@ -8,8 +8,6 @@ if (!$smarty->isCached('master.tpl', $smarty_cache_key)) {
   // Fetch data from wallet
   if ($bitcoin->can_connect() === true){
     $dDifficulty = $bitcoin->getdifficulty();
-    if (is_array($dDifficulty) && array_key_exists('proof-of-work', $dDifficulty))
-      $dDifficulty = $dDifficulty['proof-of-work'];
     $iBlock = $bitcoin->getblockcount();
     is_int($iBlock) && $iBlock > 0 ? $sBlockHash = $bitcoin->query('getblockhash', $iBlock) : $sBlockHash = '';
   } else {
@@ -52,7 +50,7 @@ if (!$smarty->isCached('master.tpl', $smarty_cache_key)) {
   $smarty->assign("CONTRIBSHARES", $aContributorsShares);
   $smarty->assign("CONTRIBHASHES", $aContributorsHashes);
   $smarty->assign("CURRENTBLOCK", $iBlock);
-  $smarty->assign("CURRENTBLOCKHASH", $sBlockHash);
+  $smarty->assign("CURRENTBLOCKHASH", @$sBlockHash);
   if (count($aBlockData) > 0) {
     $smarty->assign("LASTBLOCK", $aBlockData['height']);
     $smarty->assign("LASTBLOCKHASH", $aBlockData['blockhash']);
@@ -66,10 +64,10 @@ if (!$smarty->isCached('master.tpl', $smarty_cache_key)) {
 }
 
 // Public / private page detection
-if ($config['website']['acl']['statistics']['pool'] == 'public') {
-  $smarty->assign("CONTENT", "authenticated.tpl");
-} else if ($user->isAuthenticated() && $config['website']['acl']['statistics']['pool'] == 'private') {
-  $smarty->assign("CONTENT", "authenticated.tpl");
+if ($setting->getValue('acl_pool_statistics')) {
+  $smarty->assign("CONTENT", "default.tpl");
+} else if ($user->isAuthenticated() && ! $setting->getValue('acl_pool_statistics')) {
+  $smarty->assign("CONTENT", "default.tpl");
 } else {
   $smarty->assign("CONTENT", "../default.tpl");
 }

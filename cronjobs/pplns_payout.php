@@ -19,6 +19,9 @@ limitations under the License.
 
  */
 
+// Change to working directory
+chdir(dirname(__FILE__));
+
 // Include all settings and classes
 require_once('shared.inc.php');
 
@@ -43,9 +46,9 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
   // We support some dynamic share targets but fall back to our fixed value
   // Re-calculate after each run due to re-targets in this loop
   if ($config['pplns']['shares']['type'] == 'blockavg' && $block->getBlockCount() > 0) {
-    $pplns_target = round($block->getAvgBlockShares($config['pplns']['blockavg']['blockcount']));
+    $pplns_target = round($block->getAvgBlockShares($aBlock['height'], $config['pplns']['blockavg']['blockcount']));
   } else {
-    $pplns_target = $config['pplns']['shares']['default'] ;
+    $pplns_target = $config['pplns']['shares']['default'];
   }
 
   if (!$aBlock['accounted']) {
@@ -65,7 +68,9 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
 
     if ($iRoundShares >= $pplns_target) {
       $log->logDebug("Matching or exceeding PPLNS target of $pplns_target with $iRoundShares");
-      $aAccountShares = $share->getSharesForAccounts($aBlock['share_id'] - $pplns_target, $aBlock['share_id']);
+      $iMinimumShareId = $share->getMinimumShareId($pplns_target, $aBlock['share_id']);
+      // We need to go one ID lower due to `id >` or we won't match if minimum share ID == $aBlock['share_id']
+      $aAccountShares = $share->getSharesForAccounts($iMinimumShareId - 1, $aBlock['share_id']);
       if (empty($aAccountShares)) {
         $log->logFatal("No shares found for this block, aborted! Block Height : " . $aBlock['height']);
         $monitoring->setStatus($cron_name . "_active", "yesno", 0); 
@@ -73,6 +78,11 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
         $monitoring->setStatus($cron_name . "_status", "okerror", 1); 
         exit(1);
       }
+      foreach($aAccountShares as $key => $aData) {
+        $iNewRoundShares += $aData['valid'];
+      }
+      $log->logInfo('Adjusting round target to PPLNS target ' . $iNewRoundShares);
+      $iRoundShares = $iNewRoundShares;
     } else {
       $log->logDebug("Not able to match PPLNS target of $pplns_target with $iRoundShares");
       // We need to fill up with archived shares
@@ -124,26 +134,26 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
     // Loop through all accounts that have found shares for this round
     foreach ($aAccountShares as $key => $aData) {
       // Payout based on PPLNS target shares, proportional payout for all users
-      $aData['percentage'] = number_format(round(( 100 / $iRoundShares) * $aData['valid'], 8), 8);
-      $aData['payout'] = number_format(round(( $aData['percentage'] / 100 ) * $dReward, 8), 8);
+      $aData['percentage'] = round(( 100 / $iRoundShares) * $aData['valid'], 8);
+      $aData['payout'] = round(( $aData['percentage'] / 100 ) * $dReward, 8);
       // Defaults
       $aData['fee' ] = 0;
       $aData['donation'] = 0;
 
       if ($config['fees'] > 0 && $aData['no_fees'] == 0)
-        $aData['fee'] = number_format(round($config['fees'] / 100 * $aData['payout'], 8), 8);
+        $aData['fee'] = round($config['fees'] / 100 * $aData['payout'], 8);
       // Calculate donation amount, fees not included
-      $aData['donation'] = number_format(round($user->getDonatePercent($user->getUserId($aData['username'])) / 100 * ( $aData['payout'] - $aData['fee']), 8), 8);
+      $aData['donation'] = round($user->getDonatePercent($user->getUserId($aData['username'])) / 100 * ( $aData['payout'] - $aData['fee']), 8);
 
       // Verbose output of this users calculations
       $log->logInfo($aData['id'] . "\t" .
         $aData['username'] . "\t" .
         $aData['valid'] . "\t" .
         $aData['invalid'] . "\t" .
-        $aData['percentage'] . "\t" .
-        $aData['payout'] . "\t" .
-        $aData['donation'] . "\t" .
-        $aData['fee']);
+        number_format($aData['percentage'], 8) . "\t" .
+        number_format($aData['payout'], 8) . "\t" .
+        number_format($aData['donation'], 8) . "\t" .
+        number_format($aData['fee'], 8));
 
       // Add full round share statistics, not just PPLNS
       foreach ($aRoundAccountShares as $key => $aRoundData) {
@@ -151,6 +161,7 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
           if (!$statistics->updateShareStatistics($aRoundData, $aBlock['id']))
             $log->logError('Failed to update share statistics for ' . $aData['username']);
       }
+
       // Add new credit transaction
       if (!$transaction->addTransaction($aData['id'], $aData['payout'], 'Credit', $aBlock['id']))
         $log->logFatal('Failed to insert new Credit transaction to database for ' . $aData['username']);

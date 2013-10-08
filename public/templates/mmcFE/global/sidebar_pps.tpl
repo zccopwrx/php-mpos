@@ -11,7 +11,7 @@
                     </tr>
                     <tr>
                       <td><b>Hashrate</b></td>
-                      <td class="right">{$GLOBAL.userdata.hashrate|number_format} KH/s</td>
+                      <td class="right">{$GLOBAL.userdata.hashrate|number_format:"2"} {$GLOBAL.hashunits.personal}</td>
                     </tr>
                     <tr>
                       <td><b>Share Rate</b></td>
@@ -27,6 +27,10 @@
                     <tr>
                       <td><b>Pool Valid</b></td>
                       <td class="right"><i>{$GLOBAL.roundshares.valid|number_format}</i></td>
+                    </tr>
+                    <tr>
+                      <td><b>Your Valid</b></td>
+                      <td class="right"><i>{$GLOBAL.userdata.shares.valid|number_format}</i></td>
                     </tr>
                     <tr>
                       <td><b>Pool Invalid</b></td>
