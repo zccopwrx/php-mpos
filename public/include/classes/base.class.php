@@ -116,6 +116,7 @@ class Base {
       return false;
     }
     return true;
+  }
 
   /**
    * We may need to generate our bind_param list
