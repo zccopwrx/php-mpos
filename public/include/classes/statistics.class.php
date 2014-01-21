@@ -680,7 +680,8 @@ class Statistics extends Base {
           return $data_new;
         }
       }
-      // No cached data, fallback to SQL and cache in local cache
+return false; //dave      
+// No cached data, fallback to SQL and cache in local cache
       $stmt = $this->mysqli->prepare("
         SELECT
           a.username AS account,
