@@ -197,7 +197,7 @@ class Transaction extends Base {
         SUM(t.amount) AS donation,
         a.username AS username,
         a.is_anonymous AS is_anonymous,
-        a.donate_percent AS donate_percent
+        ROUND(a.donate_percent, 2) AS donate_percent
       FROM $this->table AS t
       LEFT JOIN " . $this->user->getTableName() . " AS a
       ON t.account_id = a.id
@@ -295,7 +295,7 @@ class Transaction extends Base {
             ), 8
           ), 0
         ) AS confirmed
-      FROM transactions AS t
+      FROM $this->table AS t
       LEFT JOIN blocks AS b
       ON t.block_id = b.id
       LEFT JOIN accounts AS a

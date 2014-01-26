@@ -22,10 +22,16 @@ $data = array(
 	'stratumport'			=> $config[gettingstarted][stratumport],
 	// payments
 	'payout_system' 		=> $config[payout_system],
+	'confirmations' 		=> $config[confirmations],
 	'min_ap_threshold' 		=> $config[ap_threshold][min],
 	'max_ap_threshold' 		=> $config[ap_threshold][max],
-	'txfee' 				=> $config[txfee],
-	'fees'					=> $config[fees],
+	'reward_type'			=> $config[payout_system] == 'pps' ? $config['pps']['reward']['type'] : $config['reward_type'],
+	'reward'				=> $config[payout_system] == 'pps' ? $config['pps']['reward']['default'] : $config['reward'],	
+	 // fees
+	'txfee' 				=> $config[txfee_manual], // make it backwards compatible
+	'txfee_manual' 			=> $config[txfee_manual],
+	'txfee_auto' 			=> $config[txfee_auto],
+	'fees'					=> $config[fees]
 );
 
 echo $api->get_json($data);

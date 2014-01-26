@@ -22,6 +22,9 @@ class User extends Base {
   public function getUserId($username, $lower=false) {
     return $this->getSingle($username, 'id', 'username', 's', $lower);
   }
+  public function getUserIdByEmail($email, $lower=false) {
+    return $this->getSingle($email, 'id', 'email', 's', $lower);
+  }
   public function getUserEmail($username, $lower=false) {
     return $this->getSingle($username, 'email', 'username', 's', $lower);
   }
@@ -157,7 +160,7 @@ class User extends Base {
           $aDataN['email'] = $this->getUserEmail($username);
           $aDataN['subject'] = 'Successful login notification';
           $aDataN['LOGINIP'] = $this->getCurrentIP();
-          $aDataN['LOGINUSER'] = $this->user;
+          $aDataN['LOGINUSER'] = $username;
           $aDataN['LOGINTIME'] = date('m/d/y H:i:s');
           $notifs->sendNotification($uid, 'success_login', $aDataN);
         }
@@ -379,6 +382,7 @@ class User extends Base {
   public function updateAccount($userID, $address, $threshold, $donate, $email, $is_anonymous, $strToken) {
     $this->debug->append("STA " . __METHOD__, 4);
     $bUser = false;
+    $donate = round($donate, 2);
     // number validation checks
     if (!is_numeric($threshold)) {
       $this->setErrorMessage('Invalid input for auto-payout');
@@ -393,8 +397,8 @@ class User extends Base {
     if (!is_numeric($donate)) {
       $this->setErrorMessage('Invalid input for donation');
       return false;
-    } else if ($donate < 0) {
-      $this->setErrorMessage('Donation below allowed 0% limit');
+    } else if ($donate < $this->config['donate_threshold']['min'] && $donate != 0) {
+      $this->setErrorMessage('Donation below allowed ' . $this->config['donate_threshold']['min'] . '% limit');
       return false;
     } else if ($donate > 100) {
       $this->setErrorMessage('Donation above allowed 100% limit');
@@ -453,6 +457,7 @@ class User extends Base {
    **/
   public function checkApiKey($key) {
     $this->debug->append("STA " . __METHOD__, 4);
+    if (!is_string($key)) return false;
     $stmt = $this->mysqli->prepare("SELECT api_key, id FROM $this->table WHERE api_key = ? LIMIT 1");
     if ($this->checkStmt($stmt) && $stmt->bind_param("s", $key) && $stmt->execute() && $stmt->bind_result($api_key, $id) && $stmt->fetch()) {
       if ($api_key === $key)
@@ -767,7 +772,7 @@ class User extends Base {
       }
     }
     if (!$aData['email'] = $this->getUserEmail($username, true)) {
-      $this->setErrorMessage("Unable to find a mail address for user $username");
+      $this->setErrorMessage("Please check your mail account to finish your password reset");
       return false;
     }
     if (!$aData['token'] = $this->token->createToken('password_reset', $this->getUserId($username, true))) {

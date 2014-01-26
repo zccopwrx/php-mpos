@@ -37,7 +37,7 @@ class StatsCache {
    * Do not store values if memcache is disabled
    **/
   public function set($key, $value, $expiration=NULL) {
-    if (! $this->config['memcache']['enabled']) return false;
+    if (! $this->config['memcache']['enabled']) return $value;
     if (empty($expiration))
       $expiration = $this->config['memcache']['expiration'] + rand( -$this->config['memcache']['splay'], $this->config['memcache']['splay']);
     $this->debug->append("Storing " . $this->getRound() . '_' . $this->config['memcache']['keyprefix'] . "$key with expiration $expiration", 3);
@@ -49,11 +49,13 @@ class StatsCache {
    * Can be used as a static, auto-updated cache via crons
    **/
   public function setStaticCache($key, $value, $expiration=NULL) {
-    if (! $this->config['memcache']['enabled']) return false;
+    if (! $this->config['memcache']['enabled']) return $value;
     if (empty($expiration))
       $expiration = $this->config['memcache']['expiration'] + rand( -$this->config['memcache']['splay'], $this->config['memcache']['splay']);
     $this->debug->append("Storing " . $this->config['memcache']['keyprefix'] . "$key with expiration $expiration", 3);
-    return $this->cache->set($this->config['memcache']['keyprefix'] . $key, $value, $expiration);
+    if ($this->cache->set($this->config['memcache']['keyprefix'] . $key, $value, $expiration))
+      return $value;
+    return false;
   }
 
   /**

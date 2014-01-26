@@ -7,7 +7,7 @@ if (!defined('SECURITY')) die('Hacking attempt');
  * This is used in the version check to ensure you run the latest version of the configuration file.
  * Once you upgraded your config, change the version here too.
  **/
-$config['version'] = '0.0.5';
+$config['version'] = '0.0.6';
 
 // Our include directory for additional features
 define('INCLUDE_DIR', BASEPATH . 'include');
@@ -126,7 +126,7 @@ $config['twofactor']['options']['withdraw'] = true;
 $config['twofactor']['options']['changepw'] = true;
 
 /**
- * CSRF protection config
+ * CSRF protection
  *
  * Explanation:
  *   To help protect against CSRF, we can generate a hash that changes every minute
@@ -134,19 +134,11 @@ $config['twofactor']['options']['changepw'] = true;
  *   form is submitted.
  *
  * Options:
- *   enabled          =   Whether or not we will generate/check for valid CSRF tokens
- *   leadtime         =   Length of time in seconds to give as leeway between minute switches
- *                         * Don't change this unless you know why you're changing it
- *   disabled_forms   =   Which forms you want to disable csrf protection on, if enabled  
- *                         * Valid options  :  login, contact, accountedit, workers, notifications, invite, register, passreset, unlockaccount
+ *   enabled          =   Whether or not we will generate & check for valid CSRF tokens
  * Default:
  *   enabled          =   true
- *   leadtime         =   3
- *   disabled_forms   =   array();
  */
 $config['csrf']['enabled'] = true;
-$config['csrf']['leadtime'] = 3;
-$config['csrf']['disabled_forms'] = array();
 
 /**
  * Lock account after maximum failed logins
@@ -220,6 +212,16 @@ $config['price']['currency'] = 'USD';
 $config['ap_threshold']['min'] = 1;
 $config['ap_threshold']['max'] = 250;
 
+/**
+ * Donation thresholds
+ *
+ * You can define a min and max values for you users
+ * donation settings here.
+ *
+ * Defaults:
+ *   `min` = `1`
+ **/
+$config['donate_threshold']['min'] = 1;
 
 /**
  * Account specific settings
@@ -463,7 +465,7 @@ $config['difficulty'] = 20;
  *   reward       = 50
  *
  **/
-$config['reward_type'] = 'fixed';
+$config['reward_type'] = 'block';
 $config['reward'] = 50;
 
 // Confirmations per block required to credit transactions, default: 120

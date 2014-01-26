@@ -1,16 +1,16 @@
 <article class="module width_half">
   <form action="{$smarty.server.SCRIPT_NAME}?page=login" method="post" id="loginForm">
     <input type="hidden" name="to" value="{($smarty.request.to|default:"{$smarty.server.SCRIPT_NAME}?page=dashboard")|escape}" />
-    {if $GLOBAL.csrf.enabled && !"login"|in_array:$GLOBAL.csrf.disabled_forms}<input type="hidden" name="ctoken" value="{$CTOKEN|escape}" />{/if}
+    <input type="hidden" name="ctoken" value="{$CTOKEN|escape|default:""}" />
     <header><h3>Login with existing account</h3></header>
     <div class="module_content">
         <fieldset>
           <label>E-Mail</label>
-          <input type="email" name="username" size="22" maxlength="100" value="{$smarty.request.username|default:""|escape}" placeholder="Your email" required />
+          <input type="email" name="username" size="22" maxlength="100" value="{$smarty.request.username|default:""|escape}" placeholder="Your email" tabindex="1" required />
         </fieldset>
         <fieldset>
           <label>Password</label>
-          <input type="password" name="password" size="22" maxlength="100" placeholder="Your password" required />
+          <input type="password" name="password" size="22" maxlength="100" placeholder="Your password" tabindex="2" required />
         </fieldset>
       <div class="clear"></div>
     </div>
