@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 // Check user to ensure they are admin
 if (!$user->isAuthenticated() || !$user->isAdmin($_SESSION['USERDATA']['id'])) {
@@ -22,8 +20,10 @@ switch (@$_REQUEST['do']) {
 case 'lock':
   $supress_master = 1;
   // Reset user account
-  $user->changeLocked($_POST['account_id']);
   if ($user->isLocked($_POST['account_id']) == 0) {
+    $user->setLocked($_POST['account_id'], 2);
+  } else {
+    $user->setLocked($_POST['account_id'], 0);
     $user->setUserFailed($_POST['account_id'], 0);
     $user->setUserPinFailed($_POST['account_id'], 0);
   }

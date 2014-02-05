@@ -1,8 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY'))
-  die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 class Transaction extends Base {
   protected $table = 'transactions';
@@ -24,6 +21,19 @@ class Transaction extends Base {
       $this->insert_id = $stmt->insert_id;
       return true;
     }
+    return $this->sqlError();
+  }
+
+  /**
+   * Update a transaction with a RPC transaction ID
+   * @param id integer Transaction ID
+   * @param txid string RPC Transaction Identifier
+   * @return bool true or false
+   **/
+  public function setRPCTxId($transaction_id, $rpc_txid=NULL) {
+    $stmt = $this->mysqli->prepare("UPDATE $this->table SET txid = ? WHERE id = ?");
+    if ($this->checkStmt($stmt) && $stmt->bind_param('si', $rpc_txid, $transaction_id) && $stmt->execute())
+      return true;
     return $this->sqlError();
   }
 
@@ -300,7 +310,7 @@ class Transaction extends Base {
       ON t.block_id = b.id
       LEFT JOIN accounts AS a
       ON t.account_id = a.id
-      WHERE t.archived = 0 AND a.ap_threshold > 0
+      WHERE t.archived = 0 AND a.ap_threshold > 0 AND a.coin_address IS NOT NULL AND a.coin_address != ''
       GROUP BY t.account_id
       HAVING confirmed > a.ap_threshold
       ");

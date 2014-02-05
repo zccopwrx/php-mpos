@@ -1,5 +1,6 @@
 # Local Config
 /public/include/config/global.inc.php
+/public/include/config/security.inc.php
 
 # Templates
 /public/templates/compile/*.php
@@ -10,6 +11,7 @@
 # Logs
 /cronjobs/logs/*.txt
 /cronjobs/logs/*.txt.*.gz
+/logs/*
 
 # Test configs
 public/include/config/global.inc.scrypt.php

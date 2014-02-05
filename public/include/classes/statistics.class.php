@@ -1,8 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY'))
-  die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 
 /*
@@ -437,7 +434,7 @@ class Statistics extends Base {
       // Add our cached shares to the users
       $aUsers = array();
       while ($row = $result->fetch_assoc()) {
-        $row['shares'] = $this->getUserShares($row['id']);
+        $row['shares'] = $this->getUserShares($row['username'], $row['id']);
         $aUsers[] = $row;
       }
       if (count($aUsers) > 0) {
@@ -729,6 +726,7 @@ return false; //dave
     if ($data = $this->memcache->get(__FUNCTION__ . $account_id)) return $data;
     $stmt = $this->mysqli->prepare("
       SELECT
+        id,
         IFNULL(ROUND(SUM(IF(difficulty=0, pow(2, (" . $this->config['difficulty'] . " - 16)), difficulty)) * POW(2, " . $this->config['target_bits'] . ") / 3600 / 1000), 0) AS hashrate,
         HOUR(time) AS hour
       FROM " . $this->share->getTableName() . "
