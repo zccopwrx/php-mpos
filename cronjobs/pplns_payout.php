@@ -42,16 +42,16 @@ $count = 0;
 foreach ($aAllBlocks as $iIndex => $aBlock) {
   // If we have unaccounted blocks without share_ids, they might not have been inserted yet
   if (!$aBlock['share_id']) {
-    $log->logError('E0062: Block has no share_id, not running payouts');
+    $log->logError('E0062: Block ' . $aBlock['id'] . ' has no share_id, not running payouts');
     $monitoring->endCronjob($cron_name, 'E0062', 0, true);
   }
 
   // We support some dynamic share targets but fall back to our fixed value
   // Re-calculate after each run due to re-targets in this loop
   if ($config['pplns']['shares']['type'] == 'blockavg' && $block->getBlockCount() > 0) {
-      $pplns_target = round($block->getAvgBlockShares($aBlock['height'], $config['pplns']['blockavg']['blockcount']));
+    $pplns_target = round($block->getAvgBlockShares($aBlock['height'], $config['pplns']['blockavg']['blockcount']));
   } else if ($config['pplns']['shares']['type'] == 'dynamic' && $block->getBlockCount() > 0) {
-      $pplns_target = round($block->getAvgBlockShares($aBlock['height'], $config['pplns']['blockavg']['blockcount']) * (100 - $config['pplns']['dynamic']['percent'])/100 + $aBlock['shares'] * $config['pplns']['dynamic']['percent']/100);
+    $pplns_target = round($block->getAvgBlockShares($aBlock['height'], $config['pplns']['blockavg']['blockcount']) * (100 - $config['pplns']['dynamic']['percent'])/100 + $aBlock['shares'] * $config['pplns']['dynamic']['percent']/100);
   } else {
     $pplns_target = $config['pplns']['shares']['default'];
   }
@@ -85,7 +85,7 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
       // We need to go one ID lower due to `id >` or we won't match if minimum share ID == $aBlock['share_id']
       $aAccountShares = $share->getSharesForAccounts($iMinimumShareId - 1, $aBlock['share_id']);
       if (empty($aAccountShares)) {
-        $log->logFatal("No shares found for this block, aborted! Block Height : " . $aBlock['height']);
+        $log->logFatal("No shares found for this block, aborted! Block Height : " . $aBlock['height'] . ', Block ID: ' . $aBlock['id']);
         $monitoring->endCronjob($cron_name, 'E0013', 1, true);
       }
       foreach($aAccountShares as $key => $aData) {
@@ -99,14 +99,14 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
       // Grab the full current round shares since we didn't match target
       $aAccountShares = $aRoundAccountShares;
       if (empty($aAccountShares)) {
-        $log->logFatal("No shares found for this block, aborted! Block height: " . $aBlock['height']);
+        $log->logFatal("No shares found for this block, aborted! Block height: " . $aBlock['height'] . ', Block ID:' . $aBlock['id']);
         $monitoring->endCronjob($cron_name, 'E0013', 1, true);
       }
 
       // Grab only the most recent shares from Archive that fill the missing shares
       $log->logInfo('Fetching ' . ($pplns_target - $iRoundShares) . ' additional shares from archive');
       if (!$aArchiveShares = $share->getArchiveShares($pplns_target - $iRoundShares)) {
-        $log->logError('Failed to fetch shares from archive, setting target to round total');
+        $log->logError('Failed to fetch shares from archive, setting target to round total. Error: ' . $share->getCronError());
         $pplns_target = $iRoundShares;
       } else {
         // Add archived shares to users current shares, if we have any in archive
@@ -123,21 +123,21 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
           }
           // reverse payout
           if ($config['pplns']['reverse_payout']) {
-             $aSharesData = NULL;
-             foreach($aAccountShares as $key => $aData) {
-               $aSharesData[$aData['username']] = $aData;
-             }
-             // Add users from archive not in current round
-             foreach($aArchiveShares as $key => $aArchData) {
-               if (!array_key_exists($aArchData['account'], $aSharesData)) {
-                 $log->logDebug('Adding user ' . $aArchData['account'] . ' to round shares');
-                 $log->logDebug('  valid   : ' . $aArchData['valid']);
-                 $log->logDebug('  invalid   : ' . $aArchData['invalid']);
-                 $aArchData['username'] = $aArchData['account'];
-                 $aSharesData[$aArchData['account']] = $aArchData;
-               }
-             }
-          $aAccountShares = $aSharesData;
+            $aSharesData = NULL;
+            foreach($aAccountShares as $key => $aData) {
+              $aSharesData[$aData['username']] = $aData;
+            }
+            // Add users from archive not in current round
+            foreach($aArchiveShares as $key => $aArchData) {
+              if (!array_key_exists($aArchData['account'], $aSharesData)) {
+                $log->logDebug('Adding user ' . $aArchData['account'] . ' to round shares');
+                $log->logDebug('  valid   : ' . $aArchData['valid']);
+                $log->logDebug('  invalid   : ' . $aArchData['invalid']);
+                $aArchData['username'] = $aArchData['account'];
+                $aSharesData[$aArchData['account']] = $aArchData;
+              }
+            }
+            $aAccountShares = $aSharesData;
           }
         }
         // We tried to fill up to PPLNS target, now we need to check the actual shares to properly payout users
@@ -211,15 +211,15 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
 
       // Add new credit transaction
       if (!$transaction->addTransaction($aData['id'], $aData['payout'], 'Credit', $aBlock['id']))
-        $log->logFatal('Failed to insert new Credit transaction to database for ' . $aData['username'] . ': ' . $transaction->getCronError());
+        $log->logFatal('Failed to insert new Credit transaction to database for ' . $aData['username'] . ': ' . $transaction->getCronError() . 'on block ' . $aBlock['id']);
       // Add new fee debit for this block
       if ($aData['fee'] > 0 && $config['fees'] > 0)
         if (!$transaction->addTransaction($aData['id'], $aData['fee'], 'Fee', $aBlock['id']))
-          $log->logFatal('Failed to insert new Fee transaction to database for ' . $aData['username'] . ': ' . $transaction->getCronError());
+          $log->logFatal('Failed to insert new Fee transaction to database for ' . $aData['username'] . ': ' . $transaction->getCronError() . 'on block ' . $aBlock['id']);
       // Add new donation debit
       if ($aData['donation'] > 0)
         if (!$transaction->addTransaction($aData['id'], $aData['donation'], 'Donation', $aBlock['id']))
-          $log->logFatal('Failed to insert new Donation transaction to database for ' . $aData['username'] . ': ' . $transaction->getCronError());
+          $log->logFatal('Failed to insert new Donation transaction to database for ' . $aData['username'] . ': ' . $transaction->getCronError() . 'on block ' . $aBlock['id']);
     }
 
     // Add full round share statistics
@@ -228,7 +228,7 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
         continue;
       }
       if (!$statistics->insertPPLNSStatistics($aRoundData, $aBlock['id']))
-        $log->logError('Failed to insert share statistics for ' . $aRoundData['username'] . ': ' . $statistics->getCronError());
+        $log->logError('Failed to insert share statistics for ' . $aRoundData['username'] . ': ' . $statistics->getCronError() . 'on block ' . $aBlock['id']);
     }
 
     // Store this blocks height as last accounted for
@@ -236,19 +236,19 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
 
     // Move counted shares to archive before this blockhash upstream share
     if (!$share->moveArchive($iCurrentUpstreamId, $aBlock['id'], $iPreviousShareId))
-      $log->logError('Failed to copy shares to archive table: ' . $share->getCronError() . ': ' . $share->getCronError());
+      $log->logError('Failed to copy shares to archive table: ' . $iPreviousShareId . ' to ' . $iCurrentUpstreamId . ' aborting! Error: ' . $share->getCronError());
     // Delete all accounted shares
     if (!$share->deleteAccountedShares($iCurrentUpstreamId, $iPreviousShareId)) {
-      $log->logFatal("Failed to delete accounted shares from $iPreviousShareId to $iCurrentUpstreamId, aborting! Error: " . $share->getCronError());
+      $log->logFatal("Failed to delete accounted shares from " . $iPreviousShareId . " to " . $iCurrentUpstreamId . " aborting! Error: " . $share->getCronError());
       $monitoring->endCronjob($cron_name, 'E0016', 1, true);
     }
     // Mark this block as accounted for
     if (!$block->setAccounted($aBlock['id'])) {
-      $log->logFatal("Failed to mark block as accounted! Aborting! Error: " . $block->getCronError());
+      $log->logFatal("Failed to mark block" . $aBlock['id'] . " as accounted! Aborting! Error: " . $block->getCronError());
       $monitoring->endCronjob($cron_name, 'E0014', 1, true);
     }
   } else {
-    $log->logFatal('Potential double payout detected. Aborted.');
+    $log->logFatal('Potential double payout detected for block ' . $aBlock['id'] . '. Aborted.');
     $aMailData = array(
       'email' => $setting->getValue('system_error_email'),
       'subject' => 'Payout processing aborted',
@@ -258,7 +258,7 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
       'Block Share ID' => $aBlock['share_id']
     );
     if (!$mail->sendMail('notifications/error', $aMailData))
-      $log->logError("    Failed sending notifications: " . $notification->getCronError() . "\n");
+      $log->logError("    Failed sending notifications: " . $notification->getCronError());
     $monitoring->endCronjob($cron_name, 'E0015', 1, true);
   }
 }

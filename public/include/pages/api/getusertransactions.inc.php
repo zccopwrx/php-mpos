@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 // Check if the API is activated
 $api->isActive();
@@ -16,11 +14,11 @@ if (isset($_REQUEST['limit']) && $_REQUEST['limit'] < 30) {
   // Force limit
   $limit = 5;
 }
-$data['transactions'] = $transaction->getTransactions($user_id, NULL, $limit);
+$data['transactions'] = $transaction->getTransactions(0, NULL, 30, $user_id);
 
 // Fetch summary if enabled
 if (!$setting->getValue('disable_transactionsummary')) {
-  $aTransactionSummary = $transaction->getTransactionSummary($_SESSION['USERDATA']['id']);
+  $aTransactionSummary = $transaction->getTransactionSummary($user_id);
   $data['transactionsummary'] = $aTransactionSummary;
 }
 

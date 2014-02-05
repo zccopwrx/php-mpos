@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 // Check user to ensure they are admin
 if (!$user->isAuthenticated() || !$user->isAdmin($_SESSION['USERDATA']['id'])) {
@@ -37,18 +35,17 @@ if (!$smarty->isCached('master.tpl', $smarty_cache_key)) {
 
   // Cold wallet balance
   if (! $dColdCoins = $setting->getValue('wallet_cold_coins')) $dColdCoins = 0;
+  $smarty->assign("UNCONFIRMED", $dBlocksUnconfirmedBalance);
+  $smarty->assign("BALANCE", $dBalance);
+  $smarty->assign("COLDCOINS", $dColdCoins);
+  $smarty->assign("LOCKED", $dLockedBalance);
+  $smarty->assign("NEWMINT", $dNewmint);
+  $smarty->assign("COININFO", $aGetInfo);
+
+  // Tempalte specifics
 } else {
   $debug->append('Using cached page', 3);
 }
 
-$smarty->assign("UNCONFIRMED", $dBlocksUnconfirmedBalance);
-$smarty->assign("BALANCE", $dBalance);
-$smarty->assign("COLDCOINS", $dColdCoins);
-$smarty->assign("LOCKED", $dLockedBalance);
-$smarty->assign("NEWMINT", $dNewmint);
-$smarty->assign("COININFO", $aGetInfo);
-
-// Tempalte specifics
 $smarty->assign("CONTENT", "default.tpl");
-
 ?>

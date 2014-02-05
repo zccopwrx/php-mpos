@@ -1,14 +1,7 @@
 <?php
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 if ($user->isAuthenticated()) {
-  // csrf stuff
-  $csrfenabled = ($config['csrf']['enabled'] && !in_array('workers', $config['csrf']['disabled_forms'])) ? 1 : 0;
-  if ($csrfenabled) {
-    $nocsrf = ($csrftoken->getBasic($user->getCurrentIP(), 'workers') == @$_POST['ctoken']) ? 1 : 0;
-  }
-  
   switch (@$_REQUEST['do']) {
   case 'delete':
     if ($worker->deleteWorker($_SESSION['USERDATA']['id'], $_GET['id'])) {
@@ -17,8 +10,9 @@ if ($user->isAuthenticated()) {
       $_SESSION['POPUP'][] = array('CONTENT' => $worker->getError(), 'TYPE' => 'errormsg');
     }
     break;
+    
   case 'add':
-    if (!$csrfenabled || $csrfenabled && $nocsrf) {
+    if (!$config['csrf']['enabled'] || $config['csrf']['enabled'] && $csrftoken->valid) {
       if ($worker->addWorker($_SESSION['USERDATA']['id'], $_POST['username'], $_POST['password'])) {
         $_SESSION['POPUP'][] = array('CONTENT' => 'Worker added', 'TYPE' => 'success');
       } else {
@@ -28,8 +22,9 @@ if ($user->isAuthenticated()) {
       $_SESSION['POPUP'][] = array('CONTENT' => $csrftoken->getErrorWithDescriptionHTML(), 'TYPE' => 'info');
     }
     break;
+    
   case 'update':
-    if (!$csrfenabled || $csrfenabled && $nocsrf) {
+    if (!$config['csrf']['enabled'] || $config['csrf']['enabled'] && $csrftoken->valid) {
       if ($worker->updateWorkers($_SESSION['USERDATA']['id'], @$_POST['data'])) {
         $_SESSION['POPUP'][] = array('CONTENT' => 'Worker updated', 'TYPE' => 'success');
       } else {
@@ -46,10 +41,6 @@ if ($user->isAuthenticated()) {
 
   $smarty->assign('WORKERS', $aWorkers);
 }
-// csrf token
-if ($csrfenabled && !in_array('workers', $config['csrf']['disabled_forms'])) {
-  $token = $csrftoken->getBasic($user->getCurrentIP(), 'workers');
-  $smarty->assign('CTOKEN', $token);
-}
 $smarty->assign('CONTENT', 'default.tpl');
+
 ?>

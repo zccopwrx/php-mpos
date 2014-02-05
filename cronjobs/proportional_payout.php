@@ -72,6 +72,10 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
 
     // Loop through all accounts that have found shares for this round
     foreach ($aAccountShares as $key => $aData) {
+      // Skip users with only invalids
+      if ($aData['valid'] == 0) {
+        continue;
+      }
       // Skip entries that have no account ID, user deleted?
       if (empty($aData['id'])) {
         $log->logInfo('User ' . $aData['username'] . ' does not have an associated account, skipping');
@@ -132,7 +136,7 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
       $monitoring->endCronjob($cron_name, 'E0014', 1, true);
     }
   } else {
-    $log->logFatal('Potential double payout detected. Aborted.');
+    $log->logFatal('Potential double payout detected for block ' . $aBlock['id'] . '. Aborted.');
     $aMailData = array(
       'email' => $setting->getValue('system_error_email'),
       'subject' => 'Payout Failure: Double Payout',
@@ -142,7 +146,7 @@ foreach ($aAllBlocks as $iIndex => $aBlock) {
       'Block Share ID' => $aBlock['share_id']
     );
     if (!$mail->sendMail('notifications/error', $aMailData))
-    $log->logFatal('Potential double payout detected. Aborted.');
+      $log->logError('Failed to send notification mail');
     $monitoring->endCronjob($cron_name, 'E0015', 1, true);
   }
 }

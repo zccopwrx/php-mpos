@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 // Check user to ensure they are admin
 if (!$user->isAuthenticated() || !$user->isAdmin($_SESSION['USERDATA']['id'])) {
@@ -22,8 +20,10 @@ switch (@$_REQUEST['do']) {
 case 'lock':
   $supress_master = 1;
   // Reset user account
-  $user->changeLocked($_POST['account_id']);
   if ($user->isLocked($_POST['account_id']) == 0) {
+    $user->setLocked($_POST['account_id'], 2);
+  } else {
+    $user->setLocked($_POST['account_id'], 0);
     $user->setUserFailed($_POST['account_id'], 0);
     $user->setUserPinFailed($_POST['account_id'], 0);
   }
@@ -57,11 +57,11 @@ if (isset($_REQUEST['filter'])) {
     foreach ($aUsers as $iKey => $aUser) {
       $aBalance = $transaction->getBalance($aUser['id']);
       $aUser['balance'] = $aBalance['confirmed'];
-      $aUser['hashrate'] = $statistics->getUserHashrate($aUser['id']);
+      $aUser['hashrate'] = $statistics->getUserHashrate($aUser['username'], $aUser['id']);
 
       if ($config['payout_system'] == 'pps') {
-        $aUser['sharerate'] = $statistics->getUserSharerate($aUser['id']);
-        $aUser['difficulty'] = $statistics->getUserShareDifficulty($aUser['id']);
+        $aUser['sharerate'] = $statistics->getUserSharerate($aUser['username'], $aUser['id']);
+        $aUser['difficulty'] = $statistics->getUserShareDifficulty($aUser['username'], $aUser['id']);
         $aUser['estimates'] = $statistics->getUserEstimates($aUser['sharerate'], $aUser['difficulty'], $user->getUserDonatePercent($aUser['id']), $user->getUserNoFee($aUser['id']), $statistics->getPPSValue());
       } else {
         $aUser['estimates'] = $statistics->getUserEstimates($aRoundShares, $aUser['shares'], $aUser['donate_percent'], $aUser['no_fees']);

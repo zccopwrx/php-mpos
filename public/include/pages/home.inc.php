@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 // Include markdown library
 use \Michelf\Markdown;
@@ -21,11 +19,6 @@ if (!$smarty->isCached('master.tpl', $smarty_cache_key)) {
   $smarty->assign("NEWS", $aNews);
 } else {
   $debug->append('Using cached page', 3);
-}
-// csrf token
-if ($config['csrf']['enabled'] && !in_array('login', $config['csrf']['disabled_forms'])) {
-  $token = $csrftoken->getBasic($user->getCurrentIP(), 'login');
-  $smarty->assign('CTOKEN', $token);
 }
 // Load news entries for Desktop site and unauthenticated users
 $smarty->assign("CONTENT", "default.tpl");

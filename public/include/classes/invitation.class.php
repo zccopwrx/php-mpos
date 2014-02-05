@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 class Invitation extends Base {
   var $table = 'invitations';
@@ -116,12 +114,14 @@ class Invitation extends Base {
     }
     $aData['username'] = $this->user->getUserName($account_id);
     $aData['subject'] = 'Pending Invitation';
+    $this->log->log("info", $this->user->getUserName($account_id)." sent an invitation from [".$_SERVER['REMOTE_ADDR']."]");
     if ($this->mail->sendMail('invitations/body', $aData)) {
       $aToken = $this->token->getToken($aData['token'], 'invitation');
       if (!$this->createInvitation($account_id, $aData['email'], $aToken['id']))
         return false;
       return true;
     } else {
+      $this->log->log("warn", $this->user->getUserName($account_id)." sent an invitation but the mailing failed from [".$_SERVER['REMOTE_ADDR']."]");
       $this->setErrorMessage($this->getErrorMsg('E0028'));
     }
     $this->setErrorMessage($this->getErrorMsg('E0029'));
@@ -132,6 +132,7 @@ class Invitation extends Base {
 // Instantiate class
 $invitation = new invitation();
 $invitation->setDebug($debug);
+$invitation->setLog($log);
 $invitation->setMysql($mysqli);
 $invitation->setMail($mail);
 $invitation->setUser($user);

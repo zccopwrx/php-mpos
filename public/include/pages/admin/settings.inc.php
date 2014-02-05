@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 // Check user to ensure they are admin
 if (!$user->isAuthenticated() || !$user->isAdmin($_SESSION['USERDATA']['id'])) {
@@ -10,6 +8,7 @@ if (!$user->isAuthenticated() || !$user->isAdmin($_SESSION['USERDATA']['id'])) {
 }
 
 if (@$_REQUEST['do'] == 'save' && !empty($_REQUEST['data'])) {
+  $user->log->log("warn", @$_SESSION['USERDATA']['username']." changed admin settings from [".$_SERVER['REMOTE_ADDR']."]");
   foreach($_REQUEST['data'] as $var => $value) {
     $setting->setValue($var, $value);
   }

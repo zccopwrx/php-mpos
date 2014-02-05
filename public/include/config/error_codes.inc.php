@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 $aErrorCodes['OK'] = 'OK';
 $aErrorCodes['E0001'] = 'Out of Order Share Detected';
@@ -75,4 +73,5 @@ $aErrorCodes['E0074'] = 'Failed deleting expired tokens';
 $aErrorCodes['E0075'] = 'Upgrade required';
 $aErrorCodes['E0076'] = 'No coins in wallet available';
 $aErrorCodes['E0077'] = 'RPC method or connection failed';
+$aErrorCodes['E0078'] = 'RPC method did not return 200 OK';
 ?>

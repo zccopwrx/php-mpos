@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 /**
  * Helper class for our API
@@ -43,7 +41,9 @@ class Api extends Base {
    * Check user access level to the API call
    **/
   function checkAccess($user_id, $get_id=NULL) {
-    if ( ! $this->user->isAdmin($user_id) && (!empty($get_id) && $get_id != $user_id)) {
+    if (!empty($get_id) && is_array($get_id)) die("Access denied");
+    if (is_array($user_id)) die("Access denied");
+    if ( ! $this->user->isAdmin($user_id) && (!empty($get_id) && $get_id != $user_id || !is_int($user_id))) {
       // User is NOT admin and tries to access an ID that is not their own
       header("HTTP/1.1 401 Unauthorized");
       die("Access denied");

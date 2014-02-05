@@ -1,8 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY'))
-  die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 class Notification extends Mail {
   var $table = 'notifications';
@@ -123,6 +120,7 @@ class Notification extends Mail {
       $this->setErrorMessage($this->getErrorMsg('E0047', $failed));
       return $this->sqlError();
     }
+    $this->log->log("info", "User $account_id updated notification settings from [".$_SERVER['REMOTE_ADDR']."]");
     return true;
   }
 
@@ -148,7 +146,7 @@ class Notification extends Mail {
       }
     } else {
       $this->setErrorMessage('User disabled ' . $strType . ' notifications');
-      return false;
+      return true;
     }
     $this->setErrorMessage('Error sending mail notification');
     return false;
@@ -157,6 +155,7 @@ class Notification extends Mail {
 
 $notification = new Notification();
 $notification->setDebug($debug);
+$notification->setLog($log);
 $notification->setMysql($mysqli);
 $notification->setSmarty($smarty);
 $notification->setConfig($config);

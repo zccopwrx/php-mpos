@@ -1,20 +1,13 @@
 <?php
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
 if ($user->isAuthenticated()) {
   if ($setting->getValue('disable_notifications') == 1) {
     $_SESSION['POPUP'][] = array('CONTENT' => 'Notification system disabled by admin.', 'TYPE' => 'info');
     $smarty->assign('CONTENT', 'empty');
   } else {
-    // csrf stuff
-    $csrfenabled = ($config['csrf']['enabled'] && !in_array('notifications', $config['csrf']['disabled_forms'])) ? 1 : 0;
-    if ($csrfenabled) {
-      $nocsrf = ($csrftoken->getBasic($user->getCurrentIP(), 'editnotifs') == @$_POST['ctoken']) ? 1 : 0;
-    }
-    
     if (@$_REQUEST['do'] == 'save') {
-      if (!$csrfenabled || $csrfenabled && $nocsrf) {
+      if (!$config['csrf']['enabled'] || $config['csrf']['enabled'] && $csrftoken->valid) {
         if ($notification->updateSettings($_SESSION['USERDATA']['id'], $_REQUEST['data'])) {
           $_SESSION['POPUP'][] = array('CONTENT' => 'Updated notification settings', 'TYPE' => 'success');
         } else {
@@ -31,15 +24,11 @@ if ($user->isAuthenticated()) {
 
     // Fetch user notification settings
     $aSettings = $notification->getNotificationSettings($_SESSION['USERDATA']['id']);
-
-    // csrf token
-    if ($csrfenabled && !in_array('notifications', $config['csrf']['disabled_forms'])) {
-      $token = $csrftoken->getBasic($user->getCurrentIP(), 'editnotifs');
-      $smarty->assign('CTOKEN', $token);
-    }
+    
     $smarty->assign('NOTIFICATIONS', $aNotifications);
     $smarty->assign('SETTINGS', $aSettings);
     $smarty->assign('CONTENT', 'default.tpl');
   }
 }
+
 ?>

@@ -1,7 +1,7 @@
 Description [ ![Codeship Status for TheSerapher/php-mpos](https://www.codeship.io/projects/40fa7600-61a6-0131-3fd3-367b94dc0d60/status?branch=next)](https://www.codeship.io/projects/12276)
 ===========
 
-MPOS is a web based Mining Portal for various crypto currencies. It was created by [TheSerapher](https://github.com/TheSerapher) and has hence grown quite large. Recently it was migrated into a Github Organization to make developemnt easier. It's a community driven open source prokect: If you wish to participate contact the team on IRC: https://webchat.freenode.net/?channels=#mpos-dev
+MPOS is a web based Mining Portal for various crypto currencies. It was created by [TheSerapher](https://github.com/TheSerapher) and has hence grown quite large. Recently it was migrated into a Github Organization to make development easier. It's a community driven open source project: If you wish to participate contact the team on IRC: https://webchat.freenode.net/?channels=#mpos-dev
 
 
 **NOTE**: This project is still under development and commits are happening on a daily basis.
@@ -15,6 +15,8 @@ Donations to this project are going directly to [TheSerapher](https://github.com
 
 * LTC address: `Lge95QR2frp9y1wJufjUPCycVsg5gLJPW8`
 * BTC address: `1HuYK6WPU8o3yWCrAaADDZPRpL5QiXitfv`
+* DOGE Address: `D6YtvxFGBmaD8Yq3i8LZsBQVPvCbZwCDzF`
+* Cryptsy Trade Key: `6ff7292142463b7b80cbbbdfc52334ba89727b11`
 
 Website Footer
 ==============
@@ -36,6 +38,7 @@ These people have supported this project with a donation:
 * [xisi](https://github.com/xisi)
 * [PCFiL](https://github.com/PCFiL)
 * [rog1121](https://github.com/rog1121)(https://rapidhash.net)
+* [Wow, Much Pool](http://http://www.wowmuchpool.com/)
 
 Pools running MPOS
 ==================
@@ -123,7 +126,7 @@ Please take a look at the [Quick Start Guide](https://github.com/TheSerapher/php
 Customization
 =============
 
-This project was meant to allow users to easily cusomize the system and templates. Hence no upstream framework was used to keep it as simple as possible.
+This project was meant to allow users to easily customize the system and templates. Hence no upstream framework was used to keep it as simple as possible.
 If you are just using the system, there will be no need to adjust anything. Things will work out of the box! But if you plan on creating
 your own theme, things are pretty easy:
 
@@ -145,8 +148,10 @@ Related Software
 
 There are a few other projects out there that take advantage of MPOS and it's included API. Here a quick list that you can check out for yourself:
 
-* [MPOS IRC Bot](https://github.com/WKNiGHT-/mpos-bot) written in Python, standlone bot, using the MPOS API
+* [MPOS IRC Bot](https://github.com/WKNiGHT-/mpos-bot) written in Python, standalone bot, using the MPOS API
 * [MPOS Eggdrop Module](https://github.com/iAmShorty/mpos-eggdrop-tcl) written in TCL, adding MPOS commands to this bot, using the MPOS API
+* [Windows Phone Pool App](http://www.windowsphone.com/en-us/store/app/meeneminermonitor/7ec6eac7-a642-409b-96c8-57b5cfdf45cf)
+* [iPhone iMPOS App](https://itunes.apple.com/us/app/impos/id742179239?mt=8)
 
 Contributing
 ============
@@ -160,7 +165,24 @@ You can contribute to this project in different ways:
 Contact
 =======
 
-You can find me on Freenode.net, #MPOS.
+You can find the team on Freenode.net, #MPOS.
+
+Team Members
+============
+
+Author and Github Owner: [TheSerapher](https://github.com/TheSerapher) aka Sebastian Grewe
+
+Developers:
+
+* [nrpatten](https://github.com/nrpatten)
+* [Aim](https://github.com/fspijkerman)
+* [raistlinthewiz](https://github.com/raistlinthewiz)
+* [xisi](https://github.com/xisi)
+* [nutnut](https://github.com/nutnut)
+* [obigal](https://github.com/obigal)
+* [iAmShorty](https://github.com/iAmShorty)
+* [rog1121](https://github.com/rog1121)
+* [neozonz](https://github.com/neozonz)
 
 License and Author
 ==================

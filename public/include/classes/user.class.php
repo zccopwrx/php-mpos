@@ -1,8 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY'))
-  die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 class User extends Base {
   protected $table = 'accounts';
@@ -22,11 +19,14 @@ class User extends Base {
   public function getUserId($username, $lower=false) {
     return $this->getSingle($username, 'id', 'username', 's', $lower);
   }
+  public function getUserIdByEmail($email, $lower=false) {
+    return $this->getSingle($email, 'id', 'email', 's', $lower);
+  }
   public function getUserEmail($username, $lower=false) {
     return $this->getSingle($username, 'email', 'username', 's', $lower);
   }
-  public function getUserNotifyEmail($username, $lower=false) {
-    return $this->getSingle($username, 'notify_email', 'username', 's', $lower);
+  public function getUserEmailById($id) {
+    return $this->getSingle($id, 'email', 'id', 'i');
   }
   public function getUserNoFee($id) {
     return $this->getSingle($id, 'no_fees', 'id');
@@ -42,6 +42,9 @@ class User extends Base {
   }
   public function getUserIp($id) {
     return $this->getSingle($id, 'loggedIp', 'id');
+  }
+  public function getLastLogin($id) {
+    return $this->getSingle($id, 'last_login', 'id');
   }
   public function getEmail($email) {
     return $this->getSingle($email, 'email', 'email', 's');
@@ -66,14 +69,17 @@ class User extends Base {
   }
   public function changeNoFee($id) {
     $field = array('name' => 'no_fees', 'type' => 'i', 'value' => !$this->isNoFee($id));
+    $this->log->log("warn", $this->getUserName($id)." changed no_fees to ".$this->isNoFee($id)." from [".$_SERVER['REMOTE_ADDR']."]");
     return $this->updateSingle($id, $field);
   }
-  public function changeLocked($id) {
-    $field = array('name' => 'is_locked', 'type' => 'i', 'value' => !$this->isLocked($id));
+  public function setLocked($id, $value) {
+    $field = array('name' => 'is_locked', 'type' => 'i', 'value' => $value);
+    $this->log->log("warn", $this->getUserName($id)." changed is_locked to $value from [".$_SERVER['REMOTE_ADDR']."]");
     return $this->updateSingle($id, $field);
   }
   public function changeAdmin($id) {
     $field = array('name' => 'is_admin', 'type' => 'i', 'value' => !$this->isAdmin($id));
+    $this->log->log("warn", $this->getUserName($id)." changed is_admin to ".$this->isAdmin($id)." from [".$_SERVER['REMOTE_ADDR']."]");
     return $this->updateSingle($id, $field);
   }
   public function setUserFailed($id, $value) {
@@ -134,13 +140,20 @@ class User extends Base {
       }
     }
     if ($this->isLocked($this->getUserId($username))) {
-      $this->setErrorMessage('Account locked.');
+      $this->setErrorMessage('Account locked. Please Check your Email for instructions to unlock.');
       return false;
     }
     if ($this->checkUserPassword($username, $password)) {
-      $this->updateLoginTimestamp($this->getUserId($username));
-      $this->createSession($username);
-      if ($this->setUserIp($this->getUserId($username), $_SERVER['REMOTE_ADDR'])) {
+      $uid = $this->getUserId($username);
+      $lastLoginTime = $this->getLastLogin($uid);
+      $this->updateLoginTimestamp($uid);
+      $getIPAddress = $this->getUserIp($uid);
+      if ($getIPAddress !== $_SERVER['REMOTE_ADDR']) {
+        $this->log->log("warn", "$username has logged in with a different IP [".$_SERVER['REMOTE_ADDR']."] saved is [$getIPAddress]");
+      }
+      $setIPAddress = $this->setUserIp($uid, $_SERVER['REMOTE_ADDR']);
+      $this->createSession($username, $getIPAddress, $lastLoginTime);
+      if ($setIPAddress) {
         // send a notification if success_login is active
         $uid = $this->getUserId($username);
         $notifs = new Notification();
@@ -157,7 +170,7 @@ class User extends Base {
           $aDataN['email'] = $this->getUserEmail($username);
           $aDataN['subject'] = 'Successful login notification';
           $aDataN['LOGINIP'] = $this->getCurrentIP();
-          $aDataN['LOGINUSER'] = $this->user;
+          $aDataN['LOGINUSER'] = $username;
           $aDataN['LOGINTIME'] = date('m/d/y H:i:s');
           $notifs->sendNotification($uid, 'success_login', $aDataN);
         }
@@ -165,11 +178,13 @@ class User extends Base {
       }
     }
     $this->setErrorMessage("Invalid username or password");
+    $this->log->log("info", "$username failed login from [".$_SERVER['REMOTE_ADDR']."]");
     if ($id = $this->getUserId($username)) {
       $this->incUserFailed($id);
       // Check if this account should be locked
       if (isset($this->config['maxfailed']['login']) && $this->getUserFailed($id) >= $this->config['maxfailed']['login']) {
-        $this->changeLocked($id);
+        $this->setLocked($id, 1);
+        $this->log->log("warn", "$username locked via failed logins from [".$_SERVER['REMOTE_ADDR']."] saved is [".$this->getUserIp($this->getUserId($username))."]");
         if ($token = $this->token->createToken('account_unlock', $id)) {
           $aData['token'] = $token;
           $aData['username'] = $username;
@@ -196,17 +211,19 @@ class User extends Base {
     $pin_hash = $this->getHash($pin);
     if ($stmt->bind_param('is', $userId, $pin_hash) && $stmt->execute() && $stmt->bind_result($row_pin) && $stmt->fetch()) {
       $this->setUserPinFailed($userId, 0);
-      return $pin_hash === $row_pin;
+      return ($pin_hash === $row_pin);
     }
+    $this->log->log("info", $this->getUserName($userId)." incorrect pin from [".$_SERVER['REMOTE_ADDR']."]");
     $this->incUserPinFailed($userId);
     // Check if this account should be locked
     if (isset($this->config['maxfailed']['pin']) && $this->getUserPinFailed($userId) >= $this->config['maxfailed']['pin']) {
-      $this->changeLocked($userId);
+      $this->setLocked($userId, 1);
+      $this->log->log("warn", $this->getUserName($userId)." was locked via incorrect pins from [".$_SERVER['REMOTE_ADDR']."]");
       if ($token = $this->token->createToken('account_unlock', $userId)) {
         $username = $this->getUserName($userId);
         $aData['token'] = $token;
         $aData['username'] = $username;
-        $aData['email'] = $this->getUserEmail($username);;
+        $aData['email'] = $this->getUserEmail($username);
         $aData['subject'] = 'Account auto-locked';
         $this->mail->sendMail('notifications/locked', $aData);
       }
@@ -227,17 +244,19 @@ class User extends Base {
     $newpin = $this->getHash($newpin);
     $aData['subject'] = 'PIN Reset Request';
     $stmt = $this->mysqli->prepare("UPDATE $this->table SET pin = ? WHERE ( id = ? AND pass = ? )");
-
     if ($this->checkStmt($stmt) && $stmt->bind_param('sis', $newpin, $userID, $current) && $stmt->execute()) {
       if ($stmt->errno == 0 && $stmt->affected_rows === 1) {
         if ($this->mail->sendMail('pin/reset', $aData)) {
+          $this->log->log("info", $this->getUserName($userID)." was sent a pin reset from [".$_SERVER['REMOTE_ADDR']."]");
           return true;
         } else {
+          $this->log->log("warn", $this->getUserName($userID)." request a pin reset but the mailing failed from [".$_SERVER['REMOTE_ADDR']."]");
           $this->setErrorMessage('Unable to send mail to your address');
           return false;
         }
       }
     }
+    $this->log->log("warn", $this->getUserName($userID)." incorrect pin reset attempt from [".$_SERVER['REMOTE_ADDR']."]");
     $this->setErrorMessage( 'Unable to generate PIN, current password incorrect?' );
     return false;
 }
@@ -271,6 +290,16 @@ class User extends Base {
   public function getCoinAddress($userID) {
     $this->debug->append("STA " . __METHOD__, 4);
     return $this->getSingle($userID, 'coin_address', 'id');
+  }
+
+  /**
+   * Check if a coin address exists already
+   * @param address string Coin Address
+   * @return bool True of false
+   **/
+  public function existsCoinAddress($address) {
+    $this->debug->append("STA " . __METHOD__, 4);
+    return $this->getSingle($address, 'coin_address', 'coin_address') === $address;
   }
 
   /**
@@ -312,14 +341,17 @@ class User extends Base {
       	default:
       	  $aData['subject'] = '';
       }
+      $this->log->log("info", $this->getUserName($userID)." was sent a $strType token from [".$_SERVER['REMOTE_ADDR']."]");
       if ($this->mail->sendMail('notifications/'.$strType, $aData)) {
         return true;
       } else {
         $this->setErrorMessage('Failed to send the notification');
+        $this->log->log("warn", $this->getUserName($userID)." requested a $strType token but the mailing failed from [".$_SERVER['REMOTE_ADDR']."]");
         return false;
       }
     }
-    $this->setErrorMessage('A request has already been sent to your e-mail address. Please wait 10 minutes for it to expire.');
+    $this->log->log("warn", $this->getUserName($userID)." attempted to request multiple $strType tokens from [".$_SERVER['REMOTE_ADDR']."]");
+    $this->setErrorMessage('A request has already been sent to your e-mail address. Please wait an hour for it to expire.');
     return false;
   }
   
@@ -344,25 +376,34 @@ class User extends Base {
     }
     $current = $this->getHash($current);
     $new = $this->getHash($new1);
+    if ($this->config['twofactor']['enabled'] && $this->config['twofactor']['options']['changepw']) {
+      $tValid = $this->token->isTokenValid($userID, $strToken, 6);
+      if ($tValid) {
+        if ($this->token->deleteToken($strToken)) {
+          $this->log->log("info", $this->getUserName($userID)." deleted change password token from [".$_SERVER['REMOTE_ADDR']."]");
+          // token deleted, continue
+        } else {
+          $this->log->log("warn", $this->getUserName($userID)." change password token failed to delete from [".$_SERVER['REMOTE_ADDR']."]");
+          $this->setErrorMessage('Token deletion failed');
+          return false;
+        }
+      } else {
+        $this->log->log("warn", $this->getUserName($userID)." attempted to use an invalid change password token from [".$_SERVER['REMOTE_ADDR']."]");
+        $this->setErrorMessage('Invalid token');
+        return false;
+      }
+    }
     $stmt = $this->mysqli->prepare("UPDATE $this->table SET pass = ? WHERE ( id = ? AND pass = ? )");
     if ($this->checkStmt($stmt)) {
       $stmt->bind_param('sis', $new, $userID, $current);
       $stmt->execute();
       if ($stmt->errno == 0 && $stmt->affected_rows === 1) {
-        // twofactor - consume the token if it is enabled and valid
-        if ($this->config['twofactor']['enabled'] && $this->config['twofactor']['options']['changepw']) {
-          $tValid = $this->token->isTokenValid($userID, $strToken, 6);
-          if ($tValid) {
-            $this->token->deleteToken($strToken);
-          } else {
-            $this->setErrorMessage('Invalid token');
-            return false;
-          }
-        }
+        $this->log->log("info", $this->getUserName($userID)." updated password from [".$_SERVER['REMOTE_ADDR']."]");
         return true;
       }
       $stmt->close();
     }
+    $this->log->log("warn", $this->getUserName($userID)." incorrect password update attempt from [".$_SERVER['REMOTE_ADDR']."]");
     $this->setErrorMessage( 'Unable to update password, current password wrong?' );
     return false;
   }
@@ -379,6 +420,7 @@ class User extends Base {
   public function updateAccount($userID, $address, $threshold, $donate, $email, $is_anonymous, $strToken) {
     $this->debug->append("STA " . __METHOD__, 4);
     $bUser = false;
+    $donate = round($donate, 2);
     // number validation checks
     if (!is_numeric($threshold)) {
       $this->setErrorMessage('Invalid input for auto-payout');
@@ -393,8 +435,8 @@ class User extends Base {
     if (!is_numeric($donate)) {
       $this->setErrorMessage('Invalid input for donation');
       return false;
-    } else if ($donate < 0) {
-      $this->setErrorMessage('Donation below allowed 0% limit');
+    } else if ($donate < $this->config['donate_threshold']['min'] && $donate != 0) {
+      $this->setErrorMessage('Donation below allowed ' . $this->config['donate_threshold']['min'] . '% limit');
       return false;
     } else if ($donate > 100) {
       $this->setErrorMessage('Donation above allowed 100% limit');
@@ -405,41 +447,51 @@ class User extends Base {
       return false;
     }
     if (!empty($address)) {
+      if ($address != $this->getCoinAddress($userID) && $this->existsCoinAddress($address)) {
+        $this->setErrorMessage('Address is already in use');
+        return false;
+      }
       if ($this->bitcoin->can_connect() === true) {
-        try {
-          $aStatus = $this->bitcoin->validateaddress($address);
-          if (!$aStatus['isvalid']) {
-            $this->setErrorMessage('Invalid coin address');
-            return false;
-          }
-        } catch (Exception $e) {
-          $this->setErrorMessage('Unable to verify coin address');
+        if (!$this->bitcoin->validateaddress($address)) {
+          $this->setErrorMessage('Invalid coin address');
           return false;
         }
       } else {
         $this->setErrorMessage('Unable to connect to RPC server for coin address validation');
         return false;
       }
+    } else {
+      $address = NULL;
     }
 
     // Number sanitizer, just in case we fall through above
     $threshold = min($this->config['ap_threshold']['max'], max(0, floatval($threshold)));
     $donate = min(100, max(0, floatval($donate)));
 
-    // We passed all validation checks so update the account
-    $stmt = $this->mysqli->prepare("UPDATE $this->table SET coin_address = ?, ap_threshold = ?, donate_percent = ?, email = ?, is_anonymous = ? WHERE id = ?");
-    if ($this->checkStmt($stmt) && $stmt->bind_param('sddsii', $address, $threshold, $donate, $email, $is_anonymous, $userID) && $stmt->execute())
-      // twofactor - consume the token if it is enabled and valid
-      if ($this->config['twofactor']['enabled'] && $this->config['twofactor']['options']['details']) {
-        $tValid = $this->token->isTokenValid($userID, $strToken, 5);
-        if ($tValid) {
-          $this->token->deleteToken($strToken);
+    // twofactor - consume the token if it is enabled and valid
+    if ($this->config['twofactor']['enabled'] && $this->config['twofactor']['options']['details']) {
+      $tValid = $this->token->isTokenValid($userID, $strToken, 5);
+      if ($tValid) {
+        if ($this->token->deleteToken($strToken)) {
+          $this->log->log("info", $this->getUserName($userID)." deleted account update token for [".$_SERVER['REMOTE_ADDR']."]");
         } else {
-          $this->setErrorMessage('Invalid token');
+          $this->setErrorMessage('Token deletion failed');
+          $this->log->log("warn", $this->getUserName($userID)." updated their account details but token deletion failed from [".$_SERVER['REMOTE_ADDR']."]");
           return false;
         }
+      } else {
+        $this->setErrorMessage('Invalid token');
+        $this->log->log("warn", $this->getUserName($userID)." attempted to use an invalid token account update token from [".$_SERVER['REMOTE_ADDR']."]");
+        return false;
       }
+    }
+    
+    // We passed all validation checks so update the account
+    $stmt = $this->mysqli->prepare("UPDATE $this->table SET coin_address = ?, ap_threshold = ?, donate_percent = ?, email = ?, is_anonymous = ? WHERE id = ?");
+    if ($this->checkStmt($stmt) && $stmt->bind_param('sddsii', $address, $threshold, $donate, $email, $is_anonymous, $userID) && $stmt->execute()) {
+      $this->log->log("info", $this->getUserName($userID)." updated their account details from [".$_SERVER['REMOTE_ADDR']."]");
       return true;
+    }
     // Catchall
     $this->setErrorMessage('Failed to update your account');
     $this->debug->append('Account update failed: ' . $this->mysqli->error);
@@ -453,6 +505,7 @@ class User extends Base {
    **/
   public function checkApiKey($key) {
     $this->debug->append("STA " . __METHOD__, 4);
+    if (!is_string($key)) return false;
     $stmt = $this->mysqli->prepare("SELECT api_key, id FROM $this->table WHERE api_key = ? LIMIT 1");
     if ($this->checkStmt($stmt) && $stmt->bind_param("s", $key) && $stmt->execute() && $stmt->bind_result($api_key, $id) && $stmt->fetch()) {
       if ($api_key === $key)
@@ -488,13 +541,19 @@ class User extends Base {
    * @param username string Username to create session for
    * @return none
    **/
-  private function createSession($username) {
+  private function createSession($username, $lastIP='', $lastLoginTime='') {
     $this->debug->append("STA " . __METHOD__, 4);
     $this->debug->append("Log in user to _SESSION", 2);
+    if (!empty($lastIP) && (!empty($lastLoginTime))) {
+      $_SESSION['last_ip_pop'] = array($lastIP, $lastLoginTime);
+    }
     session_regenerate_id(true);
     $_SESSION['AUTHENTICATED'] = '1';
     // $this->user from checkUserPassword
     $_SESSION['USERDATA'] = $this->user;
+    if ($this->config['protect_session_state']) {
+      $_SESSION['STATE'] = md5($_SESSION['USERDATA']['username'].$_SESSION['USERDATA']['id'].$_SERVER['HTTP_USER_AGENT']);
+    }
   }
 
   /**
@@ -512,7 +571,7 @@ class User extends Base {
    * @param none
    * @return true
    **/
-  public function logoutUser($from="") {
+  public function logoutUser() {
     $this->debug->append("STA " . __METHOD__, 4);
     // Unset all of the session variables
     $_SESSION = array();
@@ -525,11 +584,12 @@ class User extends Base {
     session_destroy();
     // Enforce generation of a new Session ID and delete the old
     session_regenerate_id(true);
+    
     // Enforce a page reload and point towards login with referrer included, if supplied
-    $port = ($_SERVER["SERVER_PORT"] == "80" or $_SERVER["SERVER_PORT"] == "443") ? "" : (":".$_SERVER["SERVER_PORT"]);
-    $location = @$_SERVER['HTTPS'] ? 'https://' . $_SERVER['SERVER_NAME'] . $port . $_SERVER['SCRIPT_NAME'] : 'http://' . $_SERVER['SERVER_NAME'] . $port . $_SERVER['SCRIPT_NAME'];
-    if (!empty($from)) $location .= '?page=login&to=' . urlencode($from);
-    // if (!headers_sent()) header('Location: ' . $location);
+    $port = ($_SERVER["SERVER_PORT"] == "80" || $_SERVER["SERVER_PORT"] == "443") ? "" : (":".$_SERVER["SERVER_PORT"]);
+    $pushto = $_SERVER['SCRIPT_NAME'].'?page=login';
+    $location = (@$_SERVER['HTTPS'] == 'on') ? 'https://' . $_SERVER['SERVER_NAME'] . $port . $pushto : 'http://' . $_SERVER['SERVER_NAME'] . $port . $pushto;
+    if (!headers_sent()) header('Location: ' . $location);
     exit('<meta http-equiv="refresh" content="0; url=' . $location . '"/>');
   }
 
@@ -648,6 +708,7 @@ class User extends Base {
       $invitation = new Invitation();
       $invitation->setMysql($this->mysqli);
       $invitation->setDebug($this->debug);
+      $invitation->setLog($this->log);
       $invitation->setUser($this);
       $invitation->setConfig($this->config);
       if (!$invitation->setActivated($aToken['id'])) {
@@ -656,6 +717,7 @@ class User extends Base {
       }
       if (!$this->token->deleteToken($strToken)) {
         $this->setErrorMessage('Unable to remove used token');
+        $this->log->log("warn", "$username tried to register but the token failed to delete [".$_SERVER['REMOTE_ADDR']."]"); 
         return false;
       }
     }
@@ -767,7 +829,7 @@ class User extends Base {
       }
     }
     if (!$aData['email'] = $this->getUserEmail($username, true)) {
-      $this->setErrorMessage("Unable to find a mail address for user $username");
+      $this->setErrorMessage("Please check your mail account to finish your password reset");
       return false;
     }
     if (!$aData['token'] = $this->token->createToken('password_reset', $this->getUserId($username, true))) {
@@ -776,6 +838,11 @@ class User extends Base {
     }
     $aData['username'] = $this->getUserName($this->getUserId($username, true));
     $aData['subject'] = 'Password Reset Request';
+    if ($_SERVER['REMOTE_ADDR'] !== $this->getUserIp($this->getUserId($username, true))) {
+      $this->log->log("warn", "$username requested password reset from [".$_SERVER['REMOTE_ADDR']."] saved is [".$this->getUserIp($this->getUserId($username, true))."]");
+    } else {
+      $this->log->log("info", "$username requested password reset from [".$_SERVER['REMOTE_ADDR']."] saved is [".$this->getUserIp($this->getUserId($username, true))."]");
+    }
     if ($this->mail->sendMail('password/reset', $aData)) {
         return true;
       } else {
@@ -792,14 +859,16 @@ class User extends Base {
    * @param none
    * @return bool
    **/
-  public function isAuthenticated($logout=true) {
+public function isAuthenticated($logout=true) {
     $this->debug->append("STA " . __METHOD__, 4);
     if (@$_SESSION['AUTHENTICATED'] == true &&
-        !$this->isLocked($_SESSION['USERDATA']['id']) &&
-        $this->getUserIp($_SESSION['USERDATA']['id']) == $_SERVER['REMOTE_ADDR']
-      ) return true;
+    !$this->isLocked($_SESSION['USERDATA']['id']) &&
+    $this->getUserIp($_SESSION['USERDATA']['id']) == $_SERVER['REMOTE_ADDR'] &&
+    (!$this->config['protect_session_state'] || ($this->config['protect_session_state'] && $_SESSION['STATE'] == md5($_SESSION['USERDATA']['username'].$_SESSION['USERDATA']['id'].$_SERVER['HTTP_USER_AGENT'])))
+    ) return true;
     // Catchall
-    if ($logout == true) $this->logoutUser($_SERVER['REQUEST_URI']);
+    $this->log->log("warn", "Forcing logout, user is locked or IP changed mid session from [".$_SERVER['REMOTE_ADDR']."] [hijack attempt?]");
+    if ($logout == true) $this->logoutUser();
     return false;
   }
   
@@ -840,8 +909,9 @@ class User extends Base {
 // Make our class available automatically
 $user = new User();
 $user->setDebug($debug);
+$user->setLog($log);
 $user->setMysql($mysqli);
-$user->setSalt(SALT);
+$user->setSalt($config['SALT']);
 $user->setSmarty($smarty);
 $user->setConfig($config);
 $user->setMail($mail);

@@ -1,7 +1,5 @@
 <?php
-// Make sure we are called from index.php
-if (!defined('SECURITY'))
-  die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 /**
  * Bitcoin classes
@@ -295,6 +293,18 @@ class BitcoinClient extends jsonRPCClient {
       $r = $this->getinfo();
     } catch (Exception $e) {
       return $e->getMessage();
+    }
+    return true;
+  }
+
+  public function validateaddress($coin_address) {
+    try {
+      $aStatus = parent::validateaddress($coin_address);
+      if (!$aStatus['isvalid']) {
+        return false;
+      }
+    } catch (Exception $e) {
+      return false;
     }
     return true;
   }

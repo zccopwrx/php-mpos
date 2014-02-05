@@ -1,8 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY'))
-  die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 /**
  * We use a wrapper class around BitcoinClient to add
@@ -28,6 +25,11 @@ class BitcoinWrapper extends BitcoinClient {
     $this->oDebug->append("STA " . __METHOD__, 4);
     if ($data = $this->memcache->get(__FUNCTION__)) return $data;
     return $this->memcache->setCache(__FUNCTION__, parent::getinfo(), 30);
+  }
+  public function getmininginfo() {
+    $this->oDebug->append("STA " . __METHOD__, 4);
+    if ($data = $this->memcache->get(__FUNCTION__)) return $data;
+    return $this->memcache->setCache(__FUNCTION__, parent::getmininginfo(), 30);
   }
   public function getblockcount() {
     $this->oDebug->append("STA " . __METHOD__, 4);
@@ -76,4 +78,4 @@ class BitcoinWrapper extends BitcoinClient {
 }
 
 // Load this wrapper
-$bitcoin = new BitcoinWrapper($config['wallet']['type'], $config['wallet']['username'], $config['wallet']['password'], $config['wallet']['host'], DEBUG, $debug, $memcache);
+$bitcoin = new BitcoinWrapper($config['wallet']['type'], $config['wallet']['username'], $config['wallet']['password'], $config['wallet']['host'], $config['DEBUG'], $debug, $memcache);

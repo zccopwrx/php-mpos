@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 // Globally available variables
 $debug->append('Global smarty variables', 3);
@@ -28,7 +26,7 @@ if ( ! $dPoolHashrateModifier = $setting->getValue('statistics_pool_hashrate_mod
 $iCurrentPoolHashrate =  $statistics->getCurrentHashrate();
 
 // Avoid confusion, ensure our nethash isn't higher than poolhash
-if ($iCurrentPoolHashrate > $dNetworkHashrate) $dNetworkHashrate = $iCurrentPoolHashrate;
+if ($iCurrentPoolHashrate > $dNetworkHashrate / 1000) $dNetworkHashrate = $iCurrentPoolHashrate;
 
 // Baseline network hashrate for templates
 if ( ! $dPersonalHashrateModifier = $setting->getValue('statistics_personal_hashrate_modifier') ) $dPersonalHashrateModifier = 1;
@@ -49,7 +47,7 @@ if (! $statistics_ajax_refresh_interval = $setting->getValue('statistics_ajax_re
 if (! $statistics_ajax_long_refresh_interval = $setting->getValue('statistics_ajax_long_refresh_interval')) $statistics_ajax_long_refresh_interval = 10;
 
 // Small helper array
-$aHashunits = array( '1' => 'KH/s', '0.001' => 'MH/s', '0.000001' => 'GH/s' );
+$aHashunits = array( '1' => 'KH/s', '0.001' => 'MH/s', '0.000001' => 'GH/s', '0.000000001' => 'TH/s' );
 
 // Global data for Smarty
 $aGlobal = array(
@@ -129,10 +127,10 @@ if (@$_SESSION['USERDATA']['id']) {
   $aGlobal['userdata']['balance'] = $transaction->getBalance($_SESSION['USERDATA']['id']);
 
   // Other userdata that we can cache savely
-  $aGlobal['userdata']['shares'] = $statistics->getUserShares($_SESSION['USERDATA']['id']);
-  $aGlobal['userdata']['rawhashrate'] = $statistics->getUserHashrate($_SESSION['USERDATA']['id']);
+  $aGlobal['userdata']['shares'] = $statistics->getUserShares($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id']);
+  $aGlobal['userdata']['rawhashrate'] = $statistics->getUserHashrate($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id']);
   $aGlobal['userdata']['hashrate'] = $aGlobal['userdata']['rawhashrate'] * $dPersonalHashrateModifier;
-  $aGlobal['userdata']['sharerate'] = $statistics->getUserSharerate($_SESSION['USERDATA']['id']);
+  $aGlobal['userdata']['sharerate'] = $statistics->getUserSharerate($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id']);
 
   switch ($config['payout_system']) {
   case 'prop':
@@ -151,10 +149,10 @@ if (@$_SESSION['USERDATA']['id']) {
     $aGlobal['userdata']['estimates'] = $aEstimates;
     break;
   case 'pps':
-    $aGlobal['userdata']['pps']['unpaidshares'] = $statistics->getUserUnpaidPPSShares($_SESSION['USERDATA']['id'], $setting->getValue('pps_last_share_id'));
+    $aGlobal['userdata']['pps']['unpaidshares'] = $statistics->getUserUnpaidPPSShares($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id'], $setting->getValue('pps_last_share_id'));
     $aGlobal['ppsvalue'] = number_format($statistics->getPPSValue(), 12);
     $aGlobal['poolppsvalue'] = $aGlobal['ppsvalue'] * pow(2, $config['difficulty'] - 16);
-    $aGlobal['userdata']['sharedifficulty'] = $statistics->getUserShareDifficulty($_SESSION['USERDATA']['id']);
+    $aGlobal['userdata']['sharedifficulty'] = $statistics->getUserShareDifficulty($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id']);
     $aGlobal['userdata']['estimates'] = $statistics->getUserEstimates($aGlobal['userdata']['sharerate'], $aGlobal['userdata']['sharedifficulty'], $aGlobal['userdata']['donate_percent'], $aGlobal['userdata']['no_fees'], $aGlobal['ppsvalue']);
     break;
   }
@@ -172,7 +170,7 @@ if ($motd = $setting->getValue('system_motd'))
   $_SESSION['POPUP'][] = array('CONTENT' => $motd, 'TYPE' => 'info');
 
 // So we can display additional info
-$smarty->assign('DEBUG', DEBUG);
+$smarty->assign('DEBUG', $config['DEBUG']);
 
 // Make it available in Smarty
 $smarty->assign('PATH', 'site_assets/' . THEME);

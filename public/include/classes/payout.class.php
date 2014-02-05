@@ -1,7 +1,5 @@
 <?php
-
-// Make sure we are called from index.php
-if (!defined('SECURITY')) die('Hacking attempt');
+$defflip = (!cfip()) ? exit(header('HTTP/1.1 401 Unauthorized')) : 1;
 
 class Payout Extends Base {
   protected $table = 'payouts';
@@ -19,18 +17,6 @@ class Payout Extends Base {
   }
 
   /**
-   * Get all new, unprocessed payout requests
-   * @param none
-   * @return data Associative array with DB Fields
-   **/
-  public function getUnprocessedPayouts() {
-    $stmt = $this->mysqli->prepare("SELECT * FROM $this->table WHERE completed = 0");
-    if ($this->checkStmt($stmt) && $stmt->execute() && $result = $stmt->get_result())
-      return $result->fetch_all(MYSQLI_ASSOC);
-    return $this->sqlError('E0050');
-  }
-
-  /**
    * Insert a new payout request
    * @param account_id int Account ID
    * @param strToken string Token to confirm
@@ -43,8 +29,16 @@ class Payout Extends Base {
       if ($this->config['twofactor']['enabled'] && $this->config['twofactor']['options']['withdraw']) {
         $tValid = $this->token->isTokenValid($account_id, $strToken, 7);
         if ($tValid) {
-          $this->token->deleteToken($strToken);
+          $delete = $this->token->deleteToken($strToken);
+          if ($delete) {
+            return true;
+          } else {
+            $this->log->log("info", "User $account_id requested manual payout but the token deletion failed from [".$_SERVER['REMOTE_ADDR']."]");
+            $this->setErrorMessage('Unable to delete token');
+            return false;
+          }
         } else {
+          $this->log->log("info", "User $account_id requested manual payout using an invalid token from [".$_SERVER['REMOTE_ADDR']."]");
           $this->setErrorMessage('Invalid token');
           return false;
         }
@@ -69,6 +63,7 @@ class Payout Extends Base {
 
 $oPayout = new Payout();
 $oPayout->setDebug($debug);
+$oPayout->setLog($log);
 $oPayout->setMysql($mysqli);
 $oPayout->setConfig($config);
 $oPayout->setToken($oToken);

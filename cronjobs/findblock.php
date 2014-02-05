@@ -42,12 +42,13 @@ if ( $bitcoin->can_connect() === true ){
 if (empty($aTransactions['transactions'])) {
   $log->logDebug('No new RPC transactions since last block');
 } else {
-  // Table header
-  $log->logInfo("Blockhash\t\tHeight\tAmount\tConfirmations\tDiff\t\tTime");
-
+  $header = false;
   // Let us add those blocks as unaccounted
   foreach ($aTransactions['transactions'] as $iIndex => $aData) {
     if ( $aData['category'] == 'generate' || $aData['category'] == 'immature' ) {
+      // Table header, printe once if we found a block
+      !$header ? $log->logInfo("Blockhash\t\tHeight\tAmount\tConfirmations\tDiff\t\tTime") : $header = true;
+
       $aBlockRPCInfo = $bitcoin->getblock($aData['blockhash']);
       $config['reward_type'] == 'block' ? $aData['amount'] = $aData['amount'] : $aData['amount'] = $config['reward'];
       $aData['height'] = $aBlockRPCInfo['height'];
@@ -120,7 +121,7 @@ if (empty($aAllBlocks)) {
         }
       } else {
         $log->logFatal('E0005: Unable to fetch blocks upstream share, aborted:' . $share->getCronError());
-        $monitoring->endCronjob($cron_name, 'E0005', 1, true);
+        $monitoring->endCronjob($cron_name, 'E0005', 0, true);
       }
 
       $log->logInfo(
