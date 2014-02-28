@@ -42,6 +42,9 @@ if (!$smarty->isCached('master.tpl', $smarty_cache_key)) {
     $dTimeSinceLast = 0;
   }
 
+  // Block average reward or fixed
+  $reward = $config['reward_type'] == 'fixed' ? $config['reward'] : $block->getAverageAmount();
+
     // Round progress
   $iEstShares = $statistics->getEstimatedShares($dDifficulty);
   $aRoundShares = $statistics->getRoundShares();
@@ -73,17 +76,22 @@ if (!$smarty->isCached('master.tpl', $smarty_cache_key)) {
     $smarty->assign("LASTBLOCK", 0);
   }
   $smarty->assign("DIFFICULTY", $dDifficulty);
-  $smarty->assign("REWARD", $config['reward']);
+  $smarty->assign("REWARD", $reward);
 } else {
   $debug->append('Using cached page', 3);
 }
 
-// Public / private page detection
-if ($setting->getValue('acl_pool_statistics')) {
+switch($setting->getValue('acl_pool_statistics', 1)) {
+case '0':
+  if ($user->isAuthenticated()) {
+    $smarty->assign("CONTENT", "default.tpl");
+  }
+  break;
+case '1':
   $smarty->assign("CONTENT", "default.tpl");
-} else if ($user->isAuthenticated() && ! $setting->getValue('acl_pool_statistics')) {
-  $smarty->assign("CONTENT", "default.tpl");
-} else {
-  $smarty->assign("CONTENT", "../default.tpl");
+  break;
+case '2':
+  $_SESSION['POPUP'][] = array('CONTENT' => 'Page currently disabled. Please try again later.', 'TYPE' => 'errormsg');
+  $smarty->assign("CONTENT", "");
+  break;
 }
-?>

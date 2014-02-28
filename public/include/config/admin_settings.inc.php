@@ -189,38 +189,73 @@ $aSettings['acl'][] = array(
 );
 $aSettings['acl'][] = array(
   'display' => 'Pool Statistics', 'type' => 'select',
-  'options' => array( 0 => 'Private', 1 => 'Public'),
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
   'default' => 1,
   'name' => 'acl_pool_statistics', 'value' => $setting->getValue('acl_pool_statistics'),
   'tooltip' => 'Make the pool statistics page private (users only) or public.'
 );
 $aSettings['acl'][] = array(
   'display' => 'Block Statistics', 'type' => 'select',
-  'options' => array( 0 => 'Private', 1 => 'Public'),
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
   'default' => 1,
   'name' => 'acl_block_statistics', 'value' => $setting->getValue('acl_block_statistics'),
   'tooltip' => 'Make the block statistics page private (users only) or public.'
 );
 $aSettings['acl'][] = array(
   'display' => 'Round Statistics', 'type' => 'select',
-  'options' => array( 0 => 'Private', 1 => 'Public'),
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
   'default' => 1,
   'name' => 'acl_round_statistics', 'value' => $setting->getValue('acl_round_statistics'),
   'tooltip' => 'Make the round statistics page private (users only) or public.'
 );
 $aSettings['acl'][] = array(
   'display' => 'Block Finder Statistics', 'type' => 'select',
-  'options' => array( 0 => 'Private', 1 => 'Public'),
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
   'default' => 1,
   'name' => 'acl_blockfinder_statistics', 'value' => $setting->getValue('acl_blockfinder_statistics'),
   'tooltip' => 'Make the Block Finder Statistics page private (users only) or public.'
 );
 $aSettings['acl'][] = array(
   'display' => 'Uptime Statistics', 'type' => 'select',
-  'options' => array( 0 => 'Private', 1 => 'Public'),
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
   'default' => 1,
   'name' => 'acl_uptime_statistics', 'value' => $setting->getValue('acl_uptime_statistics'),
   'tooltip' => 'Make the uptime statistics page private (users only) or public.'
+);
+$aSettings['acl'][] = array(
+  'display' => 'Graphs', 'type' => 'select',
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
+  'default' => 1,
+  'name' => 'acl_graphs_statistics', 'value' => $setting->getValue('acl_graphs_statistics'),
+  'tooltip' => 'Make the graphs statistics page private (users only) or public.'
+);
+$aSettings['acl'][] = array(
+  'display' => 'Donors Page', 'type' => 'select',
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
+  'default' => 1,
+  'name' => 'acl_donors_page', 'value' => $setting->getValue('acl_donors_page'),
+  'tooltip' => 'Make the donors page private (users only) or public.'
+);
+$aSettings['acl'][] = array(
+  'display' => 'About Page', 'type' => 'select',
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
+  'default' => 1,
+  'name' => 'acl_about_page', 'value' => $setting->getValue('acl_about_page'),
+  'tooltip' => 'Make the about page private (users only) or public.'
+);
+$aSettings['acl'][] = array(
+  'display' => 'Contactform', 'type' => 'select',
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
+  'default' => 1,
+  'name' => 'acl_contactform', 'value' => $setting->getValue('acl_contactform'),
+  'tooltip' => 'Make the contactform private (users only) or public.'
+);
+$aSettings['acl'][] = array(
+  'display' => 'Live Chat Page', 'type' => 'select',
+  'options' => array( 0 => 'Private', 1 => 'Public', 2 => 'Disabled' ),
+  'default' => 2,
+  'name' => 'acl_chat_page', 'value' => $setting->getValue('acl_chat_page'),
+  'tooltip' => 'Make the chat page private (users only) or public.'
 );
 $aSettings['system'][] = array(
   'display' => 'E-mail address for system error notifications', 'type' => 'text',
@@ -272,46 +307,11 @@ $aSettings['system'][] = array(
   'tooltip' => 'Enable or Disable the payout cronjob. Users will not be able to withdraw any funds automatically if disabled. Will NOT be logged in monitoring page.'
 );
 $aSettings['system'][] = array(
-  'display' => 'Disable notifications', 'type' => 'select',
-  'options' => array( 0 => 'No', 1 => 'Yes' ),
-  'default' => 0,
-  'name' => 'disable_notifications', 'value' => $setting->getValue('disable_notifications'),
-  'tooltip' => 'Enable or Disable system notifications. This includes new found blocks, monitoring and all other notifications.'
-);
-$aSettings['system'][] = array(
   'display' => 'Disable API', 'type' => 'select',
   'options' => array( 0 => 'No', 1 => 'Yes' ),
   'default' => 0,
   'name' => 'disable_api', 'value' => $setting->getValue('disable_api'),
   'tooltip' => 'Enable or Disable the pool wide API functions. See API reference on Github for details.'
-);
-$aSettings['system'][] = array(
-  'display' => 'Disable Contactform', 'type' => 'select',
-  'options' => array( 0 => 'No', 1 => 'Yes' ),
-  'default' => 0,
-  'name' => 'disable_contactform', 'value' => $setting->getValue('disable_contactform'),
-  'tooltip' => 'Enable or Disable Contactform. Users will not be able to use the contact form.'
-);
-$aSettings['system'][] = array(
-  'display' => 'Disable Contactform for Guests', 'type' => 'select',
-  'options' => array( 0 => 'No', 1 => 'Yes' ),
-  'default' => 0,
-  'name' => 'disable_contactform_guest', 'value' => $setting->getValue('disable_contactform_guest'),
-  'tooltip' => 'Enable or Disable Contactform for guests. Guests will not be able to use the contact form.'
-);
-$aSettings['system'][] = array(
-  'display' => 'Disable Donors Page', 'type' => 'select',
-  'options' => array( 0 => 'No', 1 => 'Yes'),
-  'default' => 1,
-  'name' => 'disable_donors', 'value' => $setting->getValue('disable_donors'),
-  'tooltip' => 'Showing Donors page in Navigation.'
-);
-$aSettings['system'][] = array(
-  'display' => 'Disable About Page', 'type' => 'select',
-  'options' => array( 0 => 'No', 1 => 'Yes'),
-  'default' => 1,
-  'name' => 'disable_about', 'value' => $setting->getValue('disable_about'),
-  'tooltip' => 'Showing About page in Navigation.'
 );
 $aSettings['system'][] = array(
   'display' => 'Disable Live Dashboard', 'type' => 'select',
@@ -348,6 +348,13 @@ $aSettings['system'][] = array(
   'name' => 'disable_transactionsummary', 'value' => $setting->getValue('disable_transactionsummary'),
   'tooltip' => 'Disable transaction summaries. Helpful with large transaction tables.'
 );
+$aSettings['system'][] = array(
+  'display' => 'IRC Chat Channel', 'type' => 'text',
+  'size' => 25,
+  'default' => '#lazypoolop',
+  'name' => 'system_irc_chat', 'value' => $setting->getValue('system_irc_chat'),
+  'tooltip' => 'Your IRC support channel name.'
+);
 $aSettings['recaptcha'][] = array(
   'display' => 'Enable re-Captcha', 'type' => 'select',
   'options' => array( 0 => 'No', 1 => 'Yes' ),
@@ -361,6 +368,13 @@ $aSettings['recaptcha'][] = array(
   'default' => 0,
   'name' => 'recaptcha_enabled_registrations', 'value' => $setting->getValue('recaptcha_enabled_registrations'),
   'tooltip' => 'Enable or Disable re-Captcha. Adds a re-Captcha to the registration form.'
+);
+$aSettings['recaptcha'][] = array(
+  'display' => 'Enable re-Captcha Contactform', 'type' => 'select',
+  'options' => array( 0 => 'No', 1 => 'Yes' ),
+  'default' => 0,
+  'name' => 'recaptcha_enabled_contactform', 'value' => $setting->getValue('recaptcha_enabled_contactform'),
+  'tooltip' => 'Enable or Disable re-Captcha. Adds a re-Captcha to the contact form.'
 );
 $aSettings['recaptcha'][] = array(
   'display' => 'Enable re-Captcha Logins', 'type' => 'select',
@@ -386,8 +400,27 @@ $aSettings['recaptcha'][] = array(
 $aSettings['monitoring'][] = array(
   'display' => 'Uptime Robot Private API Key', 'type' => 'text',
   'size' => 100,
-  'default' => '<API KEY>|<MONITOR ID>,<API KEY>|<MONITOR ID>, ...',
+  'default' => 'MONITOR_API_KEY|MONITOR_NAME,MONITOR_API_KEY|MONITOR_NAME,...',
   'name' => 'monitoring_uptimerobot_api_keys', 'value' => $setting->getValue('monitoring_uptimerobot_api_keys'),
   'tooltip' => 'Create per-monitor API keys and save them here to propagate your uptime statistics.'
 );
-
+$aSettings['notifications'][] = array(
+  'display' => 'Notification Cleanup Time', 'type' => 'text',
+  'default' => 7,
+  'name' => 'notifications_cleanup_time', 'value' => $setting->getValue('notifications_cleanup_time'),
+  'tooltip' => 'Maximum age in days of notifications before cleaned from database.'
+);
+$aSettings['notifications'][] = array(
+  'display' => 'Disable notifications', 'type' => 'select',
+  'options' => array( 0 => 'No', 1 => 'Yes' ),
+  'default' => 0,
+  'name' => 'disable_notifications', 'value' => $setting->getValue('disable_notifications'),
+  'tooltip' => 'Enable or Disable system notifications. This includes new found blocks, monitoring and all other notifications.'
+);
+$aSettings['notifications'][] = array(
+  'display' => 'Disable Block Notifications', 'type' => 'select',
+  'options' => array( 0 => 'No', 1 => 'Yes'),
+  'default' => 0,
+  'name' => 'notifications_disable_block', 'value' => $setting->getValue('notifications_disable_block'),
+  'tooltip' => 'Enable/Disable block notifications globally. Will remove the user option too.'
+);
