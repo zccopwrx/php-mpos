@@ -60,7 +60,7 @@ $aGlobal = array(
   'roundshares' => $aRoundShares,
   'fees' => $config['fees'],
   'confirmations' => $config['confirmations'],
-  'reward' => $config['reward'],
+  'reward' => $config['reward_type'] == 'fixed' ? $config['reward'] : $block->getAverageAmount(),
   'price' => $setting->getValue('price'),
   'twofactor' => $config['twofactor'],
   'csrf' => $config['csrf'],
@@ -120,6 +120,11 @@ $aGlobal['acl']['block']['statistics'] = $setting->getValue('acl_block_statistic
 $aGlobal['acl']['round']['statistics'] = $setting->getValue('acl_round_statistics');
 $aGlobal['acl']['blockfinder']['statistics'] = $setting->getValue('acl_blockfinder_statistics');
 $aGlobal['acl']['uptime']['statistics'] = $setting->getValue('acl_uptime_statistics');
+$aGlobal['acl']['graphs']['statistics'] = $setting->getValue('acl_graphs_statistics');
+$aGlobal['acl']['donors']['page'] = $setting->getValue('acl_donors_page');
+$aGlobal['acl']['about']['page'] = $setting->getValue('acl_about_page');
+$aGlobal['acl']['contactform'] = $setting->getValue('acl_contactform');
+$aGlobal['acl']['chat']['page'] = $setting->getValue('acl_chat_page', 2);
 
 // We don't want these session infos cached
 if (@$_SESSION['USERDATA']['id']) {
@@ -128,9 +133,10 @@ if (@$_SESSION['USERDATA']['id']) {
 
   // Other userdata that we can cache savely
   $aGlobal['userdata']['shares'] = $statistics->getUserShares($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id']);
-  $aGlobal['userdata']['rawhashrate'] = $statistics->getUserHashrate($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id']);
+  $aUserMiningStats = $statistics->getUserMiningStats($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id']);
+  $aGlobal['userdata']['rawhashrate'] = $aUserMiningStats['hashrate'];
   $aGlobal['userdata']['hashrate'] = $aGlobal['userdata']['rawhashrate'] * $dPersonalHashrateModifier;
-  $aGlobal['userdata']['sharerate'] = $statistics->getUserSharerate($_SESSION['USERDATA']['username'], $_SESSION['USERDATA']['id']);
+  $aGlobal['userdata']['sharerate'] = $aUserMiningStats['sharerate'];
 
   switch ($config['payout_system']) {
   case 'prop':
@@ -171,6 +177,38 @@ if ($motd = $setting->getValue('system_motd'))
 
 // So we can display additional info
 $smarty->assign('DEBUG', $config['DEBUG']);
+
+// Lets check for our cron status and render a message
+require_once(INCLUDE_DIR . '/config/monitor_crons.inc.php');
+$bMessage = false;
+$aCronMessage[] = 'We are investingating issues in the backend. Your shares and hashrate are safe and we will fix things ASAP.</br><br/>';
+foreach ($aMonitorCrons as $strCron) {
+  if ($monitoring->isDisabled($strCron) == 1) {
+    $bMessage = true;
+    switch ($strCron) {
+    case 'payouts':
+      $aCronMessage[] = '<li> Payouts disabled, you will not receive any coins to your offline wallet for the time being</li>';
+      break;
+    case 'findblock':
+      $aCronMessage[] = '<li> Findblocks disabled, new blocks will currently not show up in the frontend</li>';
+      break;
+    case 'blockupdate':
+      $aCronMessage[] = '<li> Blockupdate disabled, blocks and transactions confirmations are delayed</li>';
+      break;
+    case 'pplns_payout':
+      $aCronMessage[] = '<li> PPLNS payout disabled, round credit transactions are delayed</li>';
+      break;
+    case 'prop_payout':
+      $aCronMessage[] = '<li> Proportional payout disabled, round credit transactions are delayed</li>';
+      break;
+    case 'pps_payout':
+      $aCronMessage[] = '<li> PPS payout disabled, share credit transactions are delayed</li>';
+      break;
+    }
+  }
+}
+if ($bMessage)
+  $_SESSION['POPUP'][] = array('CONTENT' => implode($aCronMessage, ''));
 
 // Make it available in Smarty
 $smarty->assign('PATH', 'site_assets/' . THEME);

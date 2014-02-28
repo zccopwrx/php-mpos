@@ -12,13 +12,13 @@ $config['protect_session_state'] = false;
 
 /**
  * Logging
- *  Log security issues - 0 = disabled, 2 = everything, 3 = warnings only
- *   
+ *  Emergency = 0, Alert     = 1,  Critical  = 2
+ *  Error     = 3, Warn      = 4,  Notice    = 5
+ *  Info      = 6, Debug     = 7,  Nothing   = 8
  */
 $config['logging']['enabled'] = true;
-$config['logging']['level'] = 3;
+$config['logging']['level'] = 6;
 $config['logging']['path'] = realpath(BASEPATH.'../logs');
-$config['logging']['file'] = date('Y-m-d').'.security.log';
 
 /**
  * Memcache Rate Limiting

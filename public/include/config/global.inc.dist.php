@@ -51,15 +51,6 @@ $config['wallet']['username'] = 'testnet';
 $config['wallet']['password'] = 'testnet';
 
 /**
- * Cold Wallet / Liquid Assets
- *  Automatically send liquid assets to a cold wallet
- *   https://github.com/MPOS/php-mpos/wiki/Config-Setup#wiki-liquid-assets--cold-wallet
- **/
-$config['coldwallet']['address'] = '';
-$config['coldwallet']['reserve'] = 50;
-$config['coldwallet']['threshold'] = 5;
-
-/**
  * Getting Started Config
  *  Shown to users in the 'Getting Started' section
  *   https://github.com/MPOS/php-mpos/wiki/Config-Setup#wiki-getting-started
@@ -145,6 +136,20 @@ $config['block_bonus'] = 0;
 $config['payout_system'] = 'prop';
 
 /**
+ * Sendmany Support
+ *  Enable/Disable Sendmany RPC method
+ *   https://github.com/MPOS/php-mpos/wiki/Config-Setup#wiki-sendmany-support
+ **/
+$config['sendmany']['enabled'] = false;
+
+/**
+ * Transaction Limits
+ *  Number of transactions per payout run
+ **/
+$config['payout']['txlimit_manual'] = 500;
+$config['payout']['txlimit_auto'] = 500;
+
+/**
  * Round Purging
  *  Round share purging configuration
  *   https://github.com/MPOS/php-mpos/wiki/Config-Setup#wiki-round-purging
@@ -176,7 +181,7 @@ $config['fees'] = 0;
 $config['pplns']['shares']['default'] = 4000000;
 $config['pplns']['shares']['type'] = 'blockavg';
 $config['pplns']['blockavg']['blockcount'] = 10;
-$config['pplns']['reverse_payout'] = false;
+$config['pplns']['reverse_payout'] = true;
 $config['pplns']['dynamic']['percent'] = 30;
 
 /**
@@ -219,9 +224,10 @@ $config['pps']['blockavg']['blockcount'] = 10;
 $config['memcache']['enabled'] = true;
 $config['memcache']['host'] = 'localhost';
 $config['memcache']['port'] = 11211;
-$config['memcache']['keyprefix'] = 'mpos_'.$config['currency'].'_';
+$config['memcache']['keyprefix'] = 'mpos_';
 $config['memcache']['expiration'] = 90;
 $config['memcache']['splay'] = 15;
+$config['memcache']['force']['contrib_shares'] = false;
 
 /**
  * Cookies

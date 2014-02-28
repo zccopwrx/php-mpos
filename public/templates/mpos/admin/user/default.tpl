@@ -34,13 +34,13 @@
       <tr>
         <td align="left">
 {if $smarty.request.start|default:"0" > 0}
-          <a href="{$smarty.server.SCRIPT_NAME}?page={$smarty.request.page|escape}&action={$smarty.request.action|escape}&start={$smarty.request.start|escape|default:"0" - $LIMIT}{if $FILTERS|default:""}{$FILTERS}{/if}"><i class="icon-left-open"></i></a>
+          <a href="{$smarty.server.SCRIPT_NAME}?page={$smarty.request.page|escape}&action={$smarty.request.action|escape}&start={$smarty.request.start|escape|default:"0" - $LIMIT}{if $FILTERS|default:""}{$FILTERS}{/if}"><i class="icon-left-open"></i> Previous 30</a>
 {else}
           <i class="icon-left-open"></i>
 {/if}
         </td>
         <td align="right">
-          <a href="{$smarty.server.SCRIPT_NAME}?page={$smarty.request.page|escape}&action={$smarty.request.action|escape}&start={$smarty.request.start|escape|default:"0" + $LIMIT}{if $FILTERS|default:""}{$FILTERS}{/if}"><i class="icon-right-open"></i></a>
+          <a href="{$smarty.server.SCRIPT_NAME}?page={$smarty.request.page|escape}&action={$smarty.request.action|escape}&start={$smarty.request.start|escape|default:"0" + $LIMIT}{if $FILTERS|default:""}{$FILTERS}{/if}">Next 30 <i class="icon-right-open"></i></a>
         </td>
     </tbody>
   </table>
@@ -86,16 +86,17 @@
       <th align="center">ID</th>
       <th align="left">Username</th>
       <th align="left">E-Mail</th>
-      <th align="right">Shares&nbsp;&nbsp;</th>
-      <th align="right">Hashrate&nbsp;&nbsp;</th>
+      <th align="right" style="padding-right:10px">Shares</th>
+      <th align="right" style="padding-right:10px">Hashrate</th>
 {if $GLOBAL.config.payout_system != 'pps'}
-      <th align="right">Est. Donation&nbsp;&nbsp;</th>
-      <th align="right">Est. Payout&nbsp;&nbsp;&nbsp;</th>
+      <th align="right" style="padding-right:10px">Est. Donation</th>
+      <th align="right" style="padding-right:10px">Est. Payout</th>
 {else}
-      <th align="right" colspan="2">Est. 24 Hours&nbsp;&nbsp;&nbsp;</th>
+      <th align="right" colspan="2" style="padding-right:10px">Est. 24 Hours</th>
 {/if}
-      <th align="right">Balance&nbsp;&nbsp;&nbsp;</th>
-      <th align="right">Last Login&nbsp;&nbsp;&nbsp;</th>
+      <th align="right" style="padding-right:10px">Balance</th>
+      <th align="right" style="padding-right:10px">Reg. Date</th>
+      <th align="right" style="padding-right:10px">Last Login</th>
       <th align="center">Admin</th>
       <th align="center">Locked</th>
       <th align="center">No Fees</th>
@@ -117,6 +118,7 @@
       <td align="right" colspan="2">{$USERS[user].estimates.hours24|number_format:"8"}</td>
 {/if}
       <td align="right">{$USERS[user].balance|number_format:"8"}</td>
+      <td align="right">{$USERS[user].signup_timestamp|date_format:"%d/%m %H:%M:%S"}</td>
       <td align="right">{$USERS[user].last_login|date_format:"%d/%m %H:%M:%S"}</td>
       <td align="center">
         <input type="hidden" name="admin[{$USERS[user].id}]" value="0"/>
