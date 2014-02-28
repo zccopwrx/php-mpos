@@ -288,7 +288,7 @@ class Transaction extends Base {
    * @param none
    * @return data array Account settings and confirmed balances
    **/
-  public function getAPQueue() {
+  public function getAPQueue($limit=250) {
     $this->debug->append("STA " . __METHOD__, 4);
     $stmt = $this->mysqli->prepare("
       SELECT
@@ -312,8 +312,9 @@ class Transaction extends Base {
       ON t.account_id = a.id
       WHERE t.archived = 0 AND a.ap_threshold > 0 AND a.coin_address IS NOT NULL AND a.coin_address != ''
       GROUP BY t.account_id
-      HAVING confirmed > a.ap_threshold AND confirmed > " . $this->config['txfee_auto']);
-    if ($this->checkStmt($stmt) && $stmt->execute() && $result = $stmt->get_result())
+      HAVING confirmed > a.ap_threshold AND confirmed > " . $this->config['txfee_auto'] . "
+      LIMIT ?");
+    if ($this->checkStmt($stmt) && $stmt->bind_param('i', $limit) && $stmt->execute() && $result = $stmt->get_result())
       return $result->fetch_all(MYSQLI_ASSOC);
     return $this->sqlError();
   }
@@ -333,7 +334,9 @@ class Transaction extends Base {
     return $this->createDebitRecord($account_id, $coin_address, $amount, 'Debit_AP');
   }
   private function createDebitRecord($account_id, $coin_address, $amount, $type) {
+    // Calculate and deduct txfee from amount
     $type == 'Debit_MP' ? $txfee = $this->config['txfee_manual'] : $txfee = $this->config['txfee_auto'];
+    $amount = $amount - $txfee;
     // Add Debit record
     if (!$this->addTransaction($account_id, $amount, $type, NULL, $coin_address, NULL)) {
       $this->setErrorMessage('Failed to create ' . $type . ' transaction record in database');
@@ -342,9 +345,11 @@ class Transaction extends Base {
     // Fetch the inserted record ID so we can return this at the end
     $transaction_id = $this->insert_id;
     // Add TXFee record
-    if (!$this->addTransaction($account_id, $txfee, 'TXFee', NULL, $coin_address)) {
-      $this->setErrorMessage('Failed to create TXFee transaction record in database: ' . $this->getError());
-      return false;
+    if ($txfee > 0) {
+      if (!$this->addTransaction($account_id, $txfee, 'TXFee', NULL, $coin_address)) {
+        $this->setErrorMessage('Failed to create TXFee transaction record in database: ' . $this->getError());
+        return false;
+      }
     }
     // Mark transactions archived
     if (!$this->setArchived($account_id, $this->insert_id)) {
@@ -363,7 +368,7 @@ class Transaction extends Base {
     // Notify user via  mail
     $aMailData['email'] = $this->user->getUserEmailById($account_id);
     $aMailData['subject'] = $type . ' Completed';
-    $aMailData['amount'] = $amount - $txfee;
+    $aMailData['amount'] = $amount;
     if (!$this->notification->sendNotification($account_id, 'payout', $aMailData)) {
       $this->setErrorMessage('Failed to send notification email to users address: ' . $aMailData['email'] . 'ERROR: ' . $this->notification->getCronError());
     }
@@ -375,7 +380,7 @@ class Transaction extends Base {
    * @param none
    * @return data Associative array with DB Fields
    **/
-  public function getMPQueue() {
+  public function getMPQueue($limit=250) {
     $stmt = $this->mysqli->prepare("
       SELECT
       a.id,
@@ -397,12 +402,13 @@ class Transaction extends Base {
       ON p.account_id = a.id
       JOIN " . $this->getTableName() . " AS t
       ON t.account_id = p.account_id
-      JOIN " . $this->block->getTableName() . " AS b
+      LEFT JOIN " . $this->block->getTableName() . " AS b
       ON t.block_id = b.id
       WHERE p.completed = 0 AND t.archived = 0 AND a.coin_address IS NOT NULL AND a.coin_address != ''
       GROUP BY t.account_id
-      HAVING confirmed > " . $this->config['txfee_manual']);
-    if ($this->checkStmt($stmt) && $stmt->execute() && $result = $stmt->get_result())
+      HAVING confirmed > " . $this->config['txfee_manual'] . "
+      LIMIT ?");
+    if ($this->checkStmt($stmt) && $stmt->bind_param('i', $limit) && $stmt->execute() && $result = $stmt->get_result())
       return $result->fetch_all(MYSQLI_ASSOC);
     return $this->sqlError('E0050');
   }

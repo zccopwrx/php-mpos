@@ -63,12 +63,13 @@ foreach ($argv as $option) {
   switch ($option) {
   case '-f':
     $monitoring->setStatus($cron_name . "_disabled", "yesno", 0);
+    $monitoring->setStatus($cron_name . "_active", "yesno", 0);
     break;
   }
 }
 
 // Load 3rd party logging library for running crons
-$log = new KLogger ( 'logs/' . $cron_name . '.txt' , KLogger::INFO );
+$log = KLogger::instance( 'logs/' . $cron_name, KLogger::INFO );
 $log->LogDebug('Starting ' . $cron_name);
 
 // Load the start time for later runtime calculations for monitoring
@@ -82,7 +83,10 @@ if ($monitoring->isDisabled($cron_name)) {
 
 // Mark cron as running for monitoring
 $log->logDebug('Marking cronjob as running for monitoring');
-$monitoring->setStatus($cron_name . '_starttime', 'date', time());
+if (!$monitoring->startCronjob($cron_name)) {
+  $log->logFatal('Unable to start cronjob: ' . $monitoring->getCronError());
+  exit;
+}
 
 // Check if we need to halt our crons due to an outstanding upgrade
 if ($setting->getValue('DB_VERSION') != DB_VERSION || $config['version'] != CONFIG_VERSION) {
