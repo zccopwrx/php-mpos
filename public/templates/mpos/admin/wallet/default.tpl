@@ -17,14 +17,23 @@
       <td align="left">Unconfirmed</td>
       <td align="left">{$UNCONFIRMED|number_format:"8"}</td>
     </tr>
+{if $NEWMINT >= 0}
     <tr>
       <td align="left">Liquid Assets</td>
+      {if $GLOBAL.config.getbalancewithunconfirmed}
       <td align="left">{($BALANCE - $LOCKED - $UNCONFIRMED + $NEWMINT|default:"0")|number_format:"8"}</td>
+      {else}
+      <td align="left">{($BALANCE - $LOCKED + $NEWMINT|default:"0")|number_format:"8"}</td>
+      {/if}
     </tr>
-{if $NEWMINT >= 0}
     <tr>
       <td align="left">PoS New Mint</td>
       <td align="left">{$NEWMINT|number_format:"8"}</td>
+    </tr>
+{else}
+    <tr>
+      <td align="left">Liquid Assets</td>
+      <td align="left">{($BALANCE - $LOCKED - $UNCONFIRMED)|number_format:"8"}</td>
     </tr>
 {/if}
   </table>
